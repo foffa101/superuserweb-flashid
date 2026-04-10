@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   DollarSign, Building2, Phone, CreditCard, FileText, Download, Send,
-  ArrowLeft, AlertTriangle, CheckCircle,
+  ArrowLeft, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import {
@@ -68,6 +68,7 @@ export default function Billing() {
   const [sortBy, setSortBy] = useState<'amount' | 'usage' | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [invoices, setInvoices] = useState<Invoice[]>([...mockInvoices]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const summary = getBillingSummary();
 
@@ -277,6 +278,7 @@ export default function Billing() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-2 py-2.5 w-8"></th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Tenant</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Type</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Plan</th>
@@ -303,61 +305,130 @@ export default function Billing() {
                 const overage = getOverage(t);
                 const amount = getAmountDue(t);
                 const invStatus = getInvoiceStatus(t);
+                const isExpanded = expandedId === t.id;
+                const tenantInvs = invoices.filter((inv) => inv.tenantId === t.id).slice(0, 5);
                 return (
-                  <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">{t.name}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        t.type === 'wp' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                      }`}>
-                        {t.type === 'wp' ? 'WP' : 'API'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{t.plan}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-xs text-slate-700">{usage.label}</div>
-                      {usage.pct !== null && (
-                        <div className="w-24 bg-slate-200 rounded-full h-1.5 mt-1">
-                          <div
-                            className={`h-1.5 rounded-full ${usage.pct > 100 ? 'bg-red-500' : usage.pct > 80 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                            style={{ width: `${Math.min(100, usage.pct)}%` }}
-                          />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {overage > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                          <AlertTriangle className="h-3 w-3" /> +{overage.toLocaleString()}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400">--</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">
-                      {amount > 0 ? `$${amount.toFixed(2)}` : '--'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {invStatus ? <InvoiceBadge status={invStatus} /> : <span className="text-xs text-slate-400">--</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => openDetail(t.id)} className="p-1.5 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100" title="View">
-                          <FileText className="h-4 w-4" />
+                  <React.Fragment key={t.id}>
+                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="px-2 py-3">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
-                        {invStatus && invStatus !== 'paid' && (
-                          <button className="p-1.5 rounded text-amber-500 hover:text-amber-700 hover:bg-slate-100" title="Send Reminder">
-                            <Send className="h-4 w-4" />
-                          </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">{t.name}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          t.type === 'wp' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                        }`}>
+                          {t.type === 'wp' ? 'WP' : 'API'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{t.plan}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-xs text-slate-700">{usage.label}</div>
+                        {usage.pct !== null && (
+                          <div className="w-24 bg-slate-200 rounded-full h-1.5 mt-1">
+                            <div
+                              className={`h-1.5 rounded-full ${usage.pct > 100 ? 'bg-red-500' : usage.pct > 80 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                              style={{ width: `${Math.min(100, usage.pct)}%` }}
+                            />
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3">
+                        {overage > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                            <AlertTriangle className="h-3 w-3" /> +{overage.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">--</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">
+                        {amount > 0 ? `$${amount.toFixed(2)}` : '--'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {invStatus ? <InvoiceBadge status={invStatus} /> : <span className="text-xs text-slate-400">--</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openDetail(t.id)} className="p-1.5 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100" title="View">
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          {invStatus && invStatus !== 'paid' && (
+                            <button className="p-1.5 rounded text-amber-500 hover:text-amber-700 hover:bg-slate-100" title="Send Reminder">
+                              <Send className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-slate-50 border-b border-slate-100">
+                        <td colSpan={9} className="px-6 py-4">
+                          {/* Invoice history */}
+                          <div className="mb-4">
+                            <h4 className="text-xs font-semibold text-slate-700 uppercase mb-2">Recent Invoices</h4>
+                            {tenantInvs.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {tenantInvs.map((inv) => (
+                                  <div key={inv.id} className="flex items-center gap-4 text-xs">
+                                    <span className="text-slate-500 w-24">{formatDate(inv.date)}</span>
+                                    <span className="font-medium text-slate-900 w-20">${inv.amount.toFixed(2)}</span>
+                                    <InvoiceBadge status={inv.status} />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400">No invoices</p>
+                            )}
+                          </div>
+                          {/* API usage bar */}
+                          {t.type === 'api' && t.callsIncluded && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-semibold text-slate-700 uppercase mb-2">API Usage</h4>
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 bg-slate-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${(t.callsUsed || 0) > t.callsIncluded ? 'bg-red-500' : 'bg-green-500'}`}
+                                    style={{ width: `${Math.min(100, ((t.callsUsed || 0) / t.callsIncluded) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-slate-500">{(t.callsUsed || 0).toLocaleString()} / {t.callsIncluded.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          )}
+                          {/* Quick actions */}
+                          <div className="flex items-center gap-2">
+                            {invStatus && invStatus !== 'paid' && (
+                              <button
+                                onClick={() => {
+                                  const unpaid = tenantInvs.find((inv) => inv.status !== 'paid');
+                                  if (unpaid) handleMarkPaid(unpaid.id);
+                                }}
+                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 flex items-center gap-1.5"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" /> Mark as Paid
+                              </button>
+                            )}
+                            {invStatus && invStatus !== 'paid' && (
+                              <button className="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 flex items-center gap-1.5">
+                                <Send className="h-3.5 w-3.5" /> Send Reminder
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">No tenants match filters.</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-400">No tenants match filters.</td>
                 </tr>
               )}
             </tbody>

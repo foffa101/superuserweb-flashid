@@ -30,6 +30,10 @@ export interface Tenant {
   licenseStatus?: LicenseStatus;
   licensedSites?: string[];
   licenseExpiry?: string;
+  // Shared analytics fields
+  sessionCount: number;
+  successRate: number;
+  lastActivity: string;
   // API fields
   orgName?: string;
   billingCycle?: BillingCycle;
@@ -84,6 +88,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2025-08-14T10:30:00Z',
     notes: 'Long-time customer, renewed twice.',
+    sessionCount: 3842,
+    successRate: 97.1,
+    lastActivity: '2026-04-09T08:12:44Z',
     licenseKey: 'WP-ACME-2026-XXXX',
     licenseStatus: 'active',
     licensedSites: ['https://acme-corp.com'],
@@ -98,6 +105,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2025-11-02T14:15:00Z',
     notes: 'Agency plan with 4 active client sites.',
+    sessionCount: 12450,
+    successRate: 95.8,
+    lastActivity: '2026-04-09T07:55:19Z',
     licenseKey: 'WP-WDEV-2026-AB12',
     licenseStatus: 'active',
     licensedSites: [
@@ -117,6 +127,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2025-06-10T09:00:00Z',
     notes: 'Financial services company, high volume.',
+    sessionCount: 38420,
+    successRate: 98.4,
+    lastActivity: '2026-04-09T07:45:00Z',
     orgName: 'FinSecure Inc',
     billingCycle: 'monthly',
     apiKeyHalf: 'fid_k8xj29mpqr',
@@ -134,6 +147,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2026-01-20T09:45:00Z',
     notes: 'Early-stage startup, evaluating.',
+    sessionCount: 780,
+    successRate: 92.3,
+    lastActivity: '2026-04-08T14:22:45Z',
     orgName: 'StartupXYZ',
     billingCycle: 'monthly',
     apiKeyHalf: 'fid_mn7bv2cx9d',
@@ -151,6 +167,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2025-03-01T11:00:00Z',
     notes: 'Enterprise deal, custom pricing at $5,000/mo.',
+    sessionCount: 124500,
+    successRate: 99.2,
+    lastActivity: '2026-04-09T08:14:02Z',
     orgName: 'MegaBank International',
     billingCycle: 'annual',
     apiKeyHalf: 'fid_hg4fd7sa1k',
@@ -168,6 +187,9 @@ export const mockTenants: Tenant[] = [
     status: 'active',
     createdAt: '2026-02-11T16:20:00Z',
     notes: 'Pay-per-call customer.',
+    sessionCount: 2340,
+    successRate: 94.7,
+    lastActivity: '2026-04-09T06:42:18Z',
     orgName: 'SmallBiz Co',
     billingCycle: 'monthly',
     apiKeyHalf: 'fid_zq5we8rt3y',
@@ -185,6 +207,9 @@ export const mockTenants: Tenant[] = [
     status: 'suspended',
     createdAt: '2025-09-15T08:00:00Z',
     notes: 'Suspended for non-payment.',
+    sessionCount: 8200,
+    successRate: 91.5,
+    lastActivity: '2026-03-28T16:30:00Z',
     orgName: 'HealthTech Solutions',
     billingCycle: 'monthly',
     apiKeyHalf: 'fid_ty2ui5op8a',
@@ -202,6 +227,9 @@ export const mockTenants: Tenant[] = [
     status: 'cancelled',
     createdAt: '2024-12-01T10:00:00Z',
     notes: 'Cancelled subscription, license expired.',
+    sessionCount: 1560,
+    successRate: 88.9,
+    lastActivity: '2025-11-15T10:00:00Z',
     licenseKey: 'WP-OLDC-2025-ZZ99',
     licenseStatus: 'expired',
     licensedSites: ['https://oldclient.com'],

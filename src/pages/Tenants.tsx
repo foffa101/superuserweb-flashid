@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X, Trash2,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
 import {
   mockTenants,
@@ -29,6 +30,10 @@ const planCallsIncluded: Record<string, number | undefined> = {
   'API - Business': 50000,
 };
 
+function displayPlan(plan: string): string {
+  return plan.replace(/^(WP|API)\s*-\s*/, '');
+}
+
 function emptyTenant(type: TenantType): Partial<Tenant> {
   return {
     name: '',
@@ -37,6 +42,9 @@ function emptyTenant(type: TenantType): Partial<Tenant> {
     plan: type === 'wp' ? 'WP - Standard' : 'API - Per Call',
     status: 'active',
     notes: '',
+    sessionCount: 0,
+    successRate: 0,
+    lastActivity: new Date().toISOString(),
     ...(type === 'wp'
       ? { licenseKey: generateLicenseKey(), licenseStatus: 'active' as LicenseStatus, licensedSites: [], licenseExpiry: '' }
       : { orgName: '', billingCycle: 'monthly' as BillingCycle, apiKeyHalf: generateApiKeyHalf(), pricePerCall: 0.02, callsUsed: 0, callsThisMonth: 0 }),
@@ -54,6 +62,7 @@ export default function Tenants() {
   const [formData, setFormData] = useState<Partial<Tenant>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [newSite, setNewSite] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filteredTenants = tenants.filter((t) => {
     if (filterType !== 'all' && t.type !== filterType) return false;
@@ -486,6 +495,7 @@ export default function Tenants() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-2 py-2.5 w-8"></th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Email</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Type</th>
@@ -496,38 +506,114 @@ export default function Tenants() {
               </tr>
             </thead>
             <tbody>
-              {filteredTenants.map((t) => (
-                <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">{t.name}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{t.email}</td>
-                  <td className="px-4 py-3"><TypeBadge type={t.type} /></td>
-                  <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{t.plan}</td>
-                  <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                  <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => openDetail(t)} className="p-1.5 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100" title="View">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => openEdit(t)} className="p-1.5 rounded text-blue-500 hover:text-blue-700 hover:bg-slate-100" title="Edit">
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => toggleStatus(t)}
-                        className={`p-1.5 rounded hover:bg-slate-100 ${
-                          t.status === 'active' ? 'text-amber-500 hover:text-amber-600' : 'text-green-500 hover:text-green-600'
-                        }`}
-                        title={t.status === 'active' ? 'Suspend' : 'Activate'}
-                      >
-                        {t.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredTenants.map((t) => {
+                const isExpanded = expandedId === t.id;
+                return (
+                  <React.Fragment key={t.id}>
+                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="px-2 py-3">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">{t.name}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{t.email}</td>
+                      <td className="px-4 py-3"><TypeBadge type={t.type} /></td>
+                      <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{displayPlan(t.plan)}</td>
+                      <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openDetail(t)} className="p-1.5 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100" title="View">
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => openEdit(t)} className="p-1.5 rounded text-blue-500 hover:text-blue-700 hover:bg-slate-100" title="Edit">
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleStatus(t)}
+                            className={`p-1.5 rounded hover:bg-slate-100 ${
+                              t.status === 'active' ? 'text-amber-500 hover:text-amber-600' : 'text-green-500 hover:text-green-600'
+                            }`}
+                            title={t.status === 'active' ? 'Suspend' : 'Activate'}
+                          >
+                            {t.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-slate-50 border-b border-slate-100">
+                        <td colSpan={8} className="px-6 py-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase">Total Sessions</p>
+                              <p className="text-sm font-semibold text-slate-900">{t.sessionCount.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase">Success Rate</p>
+                              <p className="text-sm font-semibold text-slate-900">{t.successRate}%</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase">Last Activity</p>
+                              <p className="text-sm text-slate-700">{formatDate(t.lastActivity)}</p>
+                            </div>
+                          </div>
+                          {t.type === 'wp' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Licensed Sites</p>
+                                {t.licensedSites && t.licensedSites.length > 0 ? (
+                                  <ul className="space-y-0.5">
+                                    {t.licensedSites.map((s, i) => (
+                                      <li key={i} className="text-xs text-blue-600">{s}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-slate-400">None</p>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase">License Expiry</p>
+                                <p className="text-sm text-slate-700">{t.licenseExpiry ? formatDate(t.licenseExpiry) : '--'}</p>
+                              </div>
+                            </div>
+                          )}
+                          {t.type === 'api' && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-200">
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase">Calls Used / Included</p>
+                                <p className="text-sm font-semibold text-slate-900">
+                                  {(t.callsUsed || t.callsThisMonth || 0).toLocaleString()}
+                                  {t.callsIncluded ? ` / ${t.callsIncluded.toLocaleString()}` : ''}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase">Billing Cycle</p>
+                                <p className="text-sm text-slate-700 capitalize">{t.billingCycle || '--'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase">Overage</p>
+                                {t.callsIncluded && (t.callsUsed || 0) > t.callsIncluded ? (
+                                  <p className="text-sm font-semibold text-red-600">+{((t.callsUsed || 0) - t.callsIncluded).toLocaleString()} calls</p>
+                                ) : (
+                                  <p className="text-sm text-green-600">None</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
               {filteredTenants.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-400">No tenants found.</td>
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">No tenants found.</td>
                 </tr>
               )}
             </tbody>
