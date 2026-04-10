@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
+  DollarSign,
   ShieldAlert,
   ScrollText,
   Settings,
@@ -17,6 +18,7 @@ import { signOut, type User } from '../lib/firebase';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'Tenants', icon: Building2 },
+  { to: '/billing', label: 'Billing', icon: DollarSign },
   { to: '/security', label: 'Security', icon: ShieldAlert },
   { to: '/events', label: 'Events', icon: ScrollText },
   { to: '/settings', label: 'Settings', icon: Settings },

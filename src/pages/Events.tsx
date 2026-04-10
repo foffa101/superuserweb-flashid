@@ -124,7 +124,7 @@ export default function Events() {
             >
               <option value="all">All tenants</option>
               {mockTenants.map((t) => (
-                <option key={t.id} value={t.id}>{t.siteName}</option>
+                <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           </div>

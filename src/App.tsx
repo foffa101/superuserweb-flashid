@@ -8,6 +8,7 @@ import Tenants from './pages/Tenants';
 import Security from './pages/Security';
 import Events from './pages/Events';
 import Settings from './pages/Settings';
+import Billing from './pages/Billing';
 
 function ProtectedRoute({ user, children }: { user: User | null; children: React.ReactNode }) {
   if (!user) return <Navigate to="/login" replace />;
@@ -46,6 +47,7 @@ export default function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tenants" element={<Tenants />} />
+        <Route path="/billing" element={<Billing />} />
         <Route path="/security" element={<Security />} />
         <Route path="/events" element={<Events />} />
         <Route path="/settings" element={<Settings user={user!} />} />
