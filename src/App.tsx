@@ -24,6 +24,57 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
 
+  // Apply saved theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('superadmin-theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  // Session timeout — auto-logout after inactivity
+  useEffect(() => {
+    if (!user || accessStatus !== 'granted') return;
+
+    const timeoutValue = localStorage.getItem('superadmin-session-timeout') || '4h';
+    if (timeoutValue === 'never') return;
+
+    const timeoutMs: Record<string, number> = {
+      '5m': 5 * 60 * 1000,
+      '15m': 15 * 60 * 1000,
+      '30m': 30 * 60 * 1000,
+      '1h': 60 * 60 * 1000,
+      '2h': 2 * 60 * 60 * 1000,
+      '4h': 4 * 60 * 60 * 1000,
+      '8h': 8 * 60 * 60 * 1000,
+      '12h': 12 * 60 * 60 * 1000,
+      '18h': 18 * 60 * 60 * 1000,
+      '24h': 24 * 60 * 60 * 1000,
+    };
+
+    const duration = timeoutMs[timeoutValue] || timeoutMs['4h'];
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await signOut();
+      }, duration);
+    };
+
+    // Reset on user activity
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, [user, accessStatus]);
+
   const checkAccess = useCallback(async (u: User) => {
     setAccessStatus('checking');
     const email = u.email;
@@ -85,14 +136,14 @@ export default function App() {
               <h1 className="text-2xl font-bold text-slate-900">Access Denied</h1>
             </div>
             <p className="text-sm text-slate-600 text-center leading-relaxed">
-              Your account (<span className="font-semibold">{user.email}</span>) is not authorized to access the FlashID Super Admin portal. Contact an administrator for access.
+              Your account (<span className="font-semibold">{user.email}</span>) is not authorized to access the Flash ID Super Admin portal. Contact an administrator for access.
             </p>
             <p className="text-xs text-slate-400 text-center mt-4">
               You will be signed out automatically...
             </p>
           </div>
           <p className="text-center text-xs text-slate-400 mt-6">
-            FlashID Internal Super Admin Portal
+            Flash ID Internal Super Admin Portal
           </p>
         </div>
       </div>

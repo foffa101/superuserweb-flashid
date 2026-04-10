@@ -20,8 +20,8 @@ const navItems = [
   { to: '/tenants', label: 'Tenants', icon: Building2 },
   { to: '/security', label: 'Security', icon: ShieldAlert },
   { to: '/events', label: 'Events', icon: ScrollText },
-  { to: '/settings', label: 'Settings', icon: Settings },
   { to: '/billing', label: 'Billing', icon: DollarSign },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 interface LayoutProps {
@@ -48,7 +48,7 @@ export default function Layout({ user }: LayoutProps) {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-700">
         <Fingerprint className="h-8 w-8 text-red-400" />
         <div>
-          <h1 className="text-lg font-bold text-white leading-tight">FlashID</h1>
+          <h1 className="text-lg font-bold text-white leading-tight">Flash ID</h1>
           <p className="text-xs text-slate-400">Super Admin</p>
         </div>
       </div>

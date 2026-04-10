@@ -10,7 +10,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Platform Overview</h1>
-        <p className="text-sm text-slate-500 mt-1">Real-time status of the FlashID platform</p>
+        <p className="text-sm text-slate-500 mt-1">Real-time status of the Flash ID platform</p>
       </div>
 
       {/* Stats grid */}

@@ -27,7 +27,7 @@ export default function Login() {
             <div className="bg-red-600 p-3 rounded-xl mb-4">
               <Fingerprint className="h-10 w-10 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">FlashID Super Admin</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Flash ID Super Admin</h1>
             <p className="text-sm text-slate-500 mt-1">Internal platform management</p>
           </div>
 
@@ -65,7 +65,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          FlashID Internal Super Admin Portal
+          Flash ID Internal Super Admin Portal
         </p>
       </div>
     </div>

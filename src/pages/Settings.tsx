@@ -1,25 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { type User } from '../lib/firebase';
 
 interface SettingsProps {
   user: User;
 }
 
-export default function Settings({ user }: SettingsProps) {
-  // Platform defaults
-  const [defaultSessionTimeout, setDefaultSessionTimeout] = useState(90);
-  const [maxSessionTimeout, setMaxSessionTimeout] = useState(300);
-  const [minPollInterval, setMinPollInterval] = useState(500);
-  const [defaultUserPolicy, setDefaultUserPolicy] = useState<'allow' | 'reject'>('allow');
+type Theme = 'light' | 'dark';
 
-  // Signing secret
-  const [rotationDays, setRotationDays] = useState(90);
-  const lastRotated = '2026-03-15T10:00:00Z';
+const SESSION_TIMEOUT_OPTIONS = [
+  { label: '5 minutes', value: '5m' },
+  { label: '15 minutes', value: '15m' },
+  { label: '30 minutes', value: '30m' },
+  { label: '1 hour', value: '1h' },
+  { label: '2 hours', value: '2h' },
+  { label: '4 hours', value: '4h' },
+  { label: '8 hours', value: '8h' },
+  { label: '12 hours', value: '12h' },
+  { label: '18 hours', value: '18h' },
+  { label: '24 hours', value: '24h' },
+  { label: 'Keep logged in', value: 'never' },
+];
+
+export default function Settings({ user }: SettingsProps) {
+  // Portal settings
+  const [theme, setTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('superadmin-theme') as Theme) || 'light';
+  });
+  const [sessionTimeout, setSessionTimeout] = useState(() => {
+    return localStorage.getItem('superadmin-session-timeout') || '4h';
+  });
 
   // Save feedback
   const [saved, setSaved] = useState(false);
 
+  // Apply theme to document
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
   const handleSave = () => {
+    localStorage.setItem('superadmin-theme', theme);
+    localStorage.setItem('superadmin-session-timeout', sessionTimeout);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -27,8 +52,8 @@ export default function Settings({ user }: SettingsProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Platform Settings</h1>
-        <p className="text-sm text-slate-500 mt-1">Global configuration for the FlashID platform</p>
+        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-500 mt-1">Profile and portal preferences</p>
       </div>
 
       {/* Profile */}
@@ -46,113 +71,53 @@ export default function Settings({ user }: SettingsProps) {
         <p className="text-xs text-slate-400">Profile info is managed via Google SSO and is read-only here.</p>
       </section>
 
-      {/* Platform Defaults */}
+      {/* Portal Settings */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Platform Defaults</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Portal Settings</h2>
+        <div className="space-y-6">
+          {/* Theme toggle */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Default Session Timeout <span className="text-slate-400 font-normal">(seconds)</span>
-            </label>
-            <input
-              type="number"
-              min={10}
-              max={300}
-              value={defaultSessionTimeout}
-              onChange={(e) => setDefaultSessionTimeout(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-            />
-            <p className="text-xs text-slate-400 mt-1">Applied to new sites by default</p>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Theme</label>
+            <div className="inline-flex rounded-lg border border-slate-300 overflow-hidden">
+              <button
+                onClick={() => setTheme('light')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  theme === 'light'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                Light
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-l border-slate-300 ${
+                  theme === 'dark'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                Dark
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">Theme preference is stored locally</p>
           </div>
+
+          {/* Session Timeout */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Max Session Timeout Allowed <span className="text-slate-400 font-normal">(seconds)</span>
-            </label>
-            <input
-              type="number"
-              min={30}
-              max={600}
-              value={maxSessionTimeout}
-              onChange={(e) => setMaxSessionTimeout(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-            />
-            <p className="text-xs text-slate-400 mt-1">Tenants cannot set timeout higher than this</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Min Poll Interval Allowed <span className="text-slate-400 font-normal">(ms)</span>
-            </label>
-            <input
-              type="number"
-              min={100}
-              max={5000}
-              step={100}
-              value={minPollInterval}
-              onChange={(e) => setMinPollInterval(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-            />
-            <p className="text-xs text-slate-400 mt-1">Prevents clients from polling too aggressively</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Default User Policy for New Sites
+              Session Timeout <span className="text-slate-400 font-normal">(auto-logout)</span>
             </label>
             <select
-              value={defaultUserPolicy}
-              onChange={(e) => setDefaultUserPolicy(e.target.value as 'allow' | 'reject')}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+              value={sessionTimeout}
+              onChange={(e) => setSessionTimeout(e.target.value)}
+              className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             >
-              <option value="allow">Allow (users verified by default)</option>
-              <option value="reject">Reject (users must be approved)</option>
+              {SESSION_TIMEOUT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
-          </div>
-        </div>
-      </section>
-
-      {/* Signing Secret Rotation */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Signing Secret Rotation</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Rotation Interval <span className="text-slate-400 font-normal">(days)</span>
-            </label>
-            <input
-              type="number"
-              min={7}
-              max={365}
-              value={rotationDays}
-              onChange={(e) => setRotationDays(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Last Rotated</label>
-            <div className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-slate-600">
-              {new Date(lastRotated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Next rotation due: {new Date(new Date(lastRotated).getTime() + rotationDays * 86400000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* API Version Info */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">API Version Info</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div>
-            <p className="text-xs font-medium text-slate-500 uppercase mb-1">Current API Version</p>
-            <p className="text-sm font-semibold text-slate-900">v1.2.0</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500 uppercase mb-1">Min Supported Version</p>
-            <p className="text-sm font-semibold text-slate-900">v1.0.0</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500 uppercase mb-1">WP Plugin Version</p>
-            <p className="text-sm font-semibold text-slate-900">1.0.4</p>
+            <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out</p>
           </div>
         </div>
       </section>

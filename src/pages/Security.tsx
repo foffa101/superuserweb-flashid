@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
+import { ShieldAlert, Plus, Trash2, Settings } from 'lucide-react';
 import { mockBannedIPs, type BannedIP } from '../lib/api';
 
 function formatDateTime(iso: string): string {
@@ -29,6 +29,16 @@ export default function Security() {
   // Geo settings
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [geoCacheDuration, setGeoCacheDuration] = useState(24);
+
+  // Platform defaults (moved from Settings)
+  const [defaultSessionTimeout, setDefaultSessionTimeout] = useState(90);
+  const [maxSessionTimeout, setMaxSessionTimeout] = useState(300);
+  const [minPollInterval, setMinPollInterval] = useState(500);
+  const [defaultUserPolicy, setDefaultUserPolicy] = useState<'allow' | 'reject'>('allow');
+
+  // Signing secret
+  const [rotationDays, setRotationDays] = useState(90);
+  const lastRotated = '2026-03-15T10:00:00Z';
 
   // Save feedback
   const [saved, setSaved] = useState(false);
@@ -303,6 +313,117 @@ export default function Security() {
               onChange={(e) => setGeoCacheDuration(Math.min(168, Math.max(1, Number(e.target.value))))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Defaults */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Platform Defaults</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Default Session Timeout <span className="text-slate-400 font-normal">(seconds)</span>
+            </label>
+            <input
+              type="number"
+              min={10}
+              max={300}
+              value={defaultSessionTimeout}
+              onChange={(e) => setDefaultSessionTimeout(Number(e.target.value))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+            <p className="text-xs text-slate-400 mt-1">Applied to new sites by default</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Max Session Timeout Allowed <span className="text-slate-400 font-normal">(seconds)</span>
+            </label>
+            <input
+              type="number"
+              min={30}
+              max={600}
+              value={maxSessionTimeout}
+              onChange={(e) => setMaxSessionTimeout(Number(e.target.value))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+            <p className="text-xs text-slate-400 mt-1">Tenants cannot set timeout higher than this</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Min Poll Interval Allowed <span className="text-slate-400 font-normal">(ms)</span>
+            </label>
+            <input
+              type="number"
+              min={100}
+              max={5000}
+              step={100}
+              value={minPollInterval}
+              onChange={(e) => setMinPollInterval(Number(e.target.value))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+            <p className="text-xs text-slate-400 mt-1">Prevents clients from polling too aggressively</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Default User Policy for New Sites
+            </label>
+            <select
+              value={defaultUserPolicy}
+              onChange={(e) => setDefaultUserPolicy(e.target.value as 'allow' | 'reject')}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            >
+              <option value="allow">Allow (users verified by default)</option>
+              <option value="reject">Reject (users must be approved)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Signing Secret Rotation */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Signing Secret Rotation</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Rotation Interval <span className="text-slate-400 font-normal">(days)</span>
+            </label>
+            <input
+              type="number"
+              min={7}
+              max={365}
+              value={rotationDays}
+              onChange={(e) => setRotationDays(Number(e.target.value))}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Last Rotated</label>
+            <div className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm text-slate-600">
+              {new Date(lastRotated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Next rotation due: {new Date(new Date(lastRotated).getTime() + rotationDays * 86400000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* API Version Info */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">API Version Info</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase mb-1">Current API Version</p>
+            <p className="text-sm font-semibold text-slate-900">v1.2.0</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase mb-1">Min Supported Version</p>
+            <p className="text-sm font-semibold text-slate-900">v1.0.0</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase mb-1">WP Plugin Version</p>
+            <p className="text-sm font-semibold text-slate-900">1.0.4</p>
           </div>
         </div>
       </section>
