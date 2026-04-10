@@ -14,8 +14,9 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { signOut, type User } from '../lib/firebase';
+import { useGlobalFilter, type GlobalFilter } from '../lib/FilterContext';
 
-const navItems = [
+const allNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'Tenants', icon: Building2 },
   { to: '/security', label: 'Security', icon: ShieldAlert },
@@ -31,7 +32,13 @@ interface LayoutProps {
 export default function Layout({ user }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { filter, setFilter } = useGlobalFilter();
   const navigate = useNavigate();
+
+  // Hide Security nav item when filter is 'wp'
+  const navItems = filter === 'wp'
+    ? allNavItems.filter((item) => item.to !== '/security')
+    : allNavItems;
   const handleSignOut = async () => {
     await signOut();
   };
@@ -118,8 +125,23 @@ export default function Layout({ user }: LayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-3">
             <span className="text-xs font-medium text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">INTERNAL</span>
+            <div className="flex items-center bg-slate-100 rounded-full p-0.5">
+              {(['all', 'wp', 'api'] as GlobalFilter[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setFilter(v)}
+                  className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${
+                    filter === v
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {v === 'all' ? 'All' : v.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="relative">
             <button

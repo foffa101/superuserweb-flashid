@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import EventRow from '../components/EventRow';
 import { mockEvents, mockTenants, type EventType, type EventStatus, type PlatformEvent } from '../lib/api';
+import { useGlobalFilter } from '../lib/FilterContext';
 
 const PAGE_SIZE = 10;
 
@@ -14,6 +15,7 @@ const eventTypes: EventType[] = [
 const statuses: EventStatus[] = ['success', 'warning', 'error', 'info'];
 
 export default function Events() {
+  const { filter: globalFilter } = useGlobalFilter();
   const [events, setEvents] = useState<PlatformEvent[]>(mockEvents);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [tenantFilter, setTenantFilter] = useState<string>('all');
@@ -22,8 +24,26 @@ export default function Events() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
 
+  // Build tenant type lookup
+  const tenantTypeMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    mockTenants.forEach((t) => { map[t.id] = t.type; });
+    return map;
+  }, []);
+
+  // Tenants visible under current global filter (for tenant dropdown)
+  const visibleTenants = useMemo(() => {
+    if (globalFilter === 'all') return mockTenants;
+    return mockTenants.filter((t) => t.type === globalFilter);
+  }, [globalFilter]);
+
   const filtered = useMemo(() => {
     let result = events;
+
+    // Apply global filter first: filter events by tenant type
+    if (globalFilter !== 'all') {
+      result = result.filter((e) => tenantTypeMap[e.tenantId] === globalFilter);
+    }
 
     if (typeFilter !== 'all') {
       result = result.filter((e) => e.eventType === typeFilter);
@@ -44,7 +64,7 @@ export default function Events() {
     }
 
     return result;
-  }, [events, typeFilter, tenantFilter, statusFilter, dateFrom, dateTo]);
+  }, [events, globalFilter, tenantTypeMap, typeFilter, tenantFilter, statusFilter, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -123,7 +143,7 @@ export default function Events() {
               className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             >
               <option value="all">All tenants</option>
-              {mockTenants.map((t) => (
+              {visibleTenants.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>

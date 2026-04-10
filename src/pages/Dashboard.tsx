@@ -1,10 +1,47 @@
+import { useMemo } from 'react';
 import { Building2, Activity, Users, TrendingUp, HeartPulse } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import EventRow from '../components/EventRow';
-import { platformStats, mockEvents } from '../lib/api';
+import { platformStats, mockEvents, mockTenants } from '../lib/api';
+import { useGlobalFilter } from '../lib/FilterContext';
 
 export default function Dashboard() {
-  const recentEvents = mockEvents.slice(0, 10);
+  const { filter } = useGlobalFilter();
+
+  const tenantTypeMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    mockTenants.forEach((t) => { map[t.id] = t.type; });
+    return map;
+  }, []);
+
+  const filteredTenants = useMemo(() => {
+    if (filter === 'all') return mockTenants;
+    return mockTenants.filter((t) => t.type === filter);
+  }, [filter]);
+
+  const filteredEvents = useMemo(() => {
+    if (filter === 'all') return mockEvents;
+    return mockEvents.filter((e) => tenantTypeMap[e.tenantId] === filter);
+  }, [filter, tenantTypeMap]);
+
+  const recentEvents = filteredEvents.slice(0, 10);
+
+  const stats = useMemo(() => {
+    if (filter === 'all') return platformStats;
+    return {
+      totalSites: filteredTenants.length,
+      totalSessionsToday: filter === 'wp'
+        ? Math.round(platformStats.totalSessionsToday * 0.3)
+        : Math.round(platformStats.totalSessionsToday * 0.7),
+      totalActiveUsers: filter === 'wp'
+        ? Math.round(platformStats.totalActiveUsers * 0.25)
+        : Math.round(platformStats.totalActiveUsers * 0.75),
+      platformSuccessRate: filteredTenants.length > 0
+        ? Math.round((filteredTenants.reduce((s, t) => s + t.successRate, 0) / filteredTenants.length) * 10) / 10
+        : 0,
+      systemHealth: platformStats.systemHealth,
+    };
+  }, [filter, filteredTenants]);
 
   return (
     <div className="space-y-8">
@@ -17,25 +54,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Registered Sites"
-          value={platformStats.totalSites}
+          value={stats.totalSites}
           icon={Building2}
           accent="blue"
         />
         <StatCard
           label="Sessions Today"
-          value={platformStats.totalSessionsToday.toLocaleString()}
+          value={stats.totalSessionsToday.toLocaleString()}
           icon={Activity}
           accent="green"
         />
         <StatCard
           label="Active Users"
-          value={platformStats.totalActiveUsers}
+          value={stats.totalActiveUsers}
           icon={Users}
           accent="amber"
         />
         <StatCard
           label="Success Rate"
-          value={`${platformStats.platformSuccessRate}%`}
+          value={`${stats.platformSuccessRate}%`}
           icon={TrendingUp}
           accent="red"
         />
@@ -75,7 +112,7 @@ export default function Dashboard() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">Recent Platform Events</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Last 10 events across all tenants</p>
+          <p className="text-xs text-slate-500 mt-0.5">Last 10 events{filter !== 'all' ? ` (${filter.toUpperCase()} tenants)` : ' across all tenants'}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

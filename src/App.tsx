@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthChange, signOut, type User } from './lib/firebase';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
+import { FilterProvider } from './lib/FilterContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -151,23 +152,25 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
-      <Route
-        element={
-          <ProtectedRoute user={user}>
-            <Layout user={user!} />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tenants" element={<Tenants />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/security" element={<Security />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/settings" element={<Settings user={user!} />} />
-      </Route>
-      <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
-    </Routes>
+    <FilterProvider>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route
+          element={
+            <ProtectedRoute user={user}>
+              <Layout user={user!} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tenants" element={<Tenants />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/security" element={<Security />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/settings" element={<Settings user={user!} />} />
+        </Route>
+        <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+      </Routes>
+    </FilterProvider>
   );
 }

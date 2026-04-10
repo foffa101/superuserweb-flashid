@@ -7,14 +7,12 @@ import StatCard from '../components/StatCard';
 import {
   mockTenants,
   mockInvoices,
-  getBillingSummary,
-  getInvoices,
   markInvoicePaid,
   type Tenant,
-  type TenantType,
   type Invoice,
   type InvoiceStatus,
 } from '../lib/api';
+import { useGlobalFilter } from '../lib/FilterContext';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -60,9 +58,9 @@ function getInvoiceStatus(t: Tenant): InvoiceStatus | null {
 type View = 'overview' | 'detail';
 
 export default function Billing() {
+  const { filter: globalFilter } = useGlobalFilter();
   const [view, setView] = useState<View>('overview');
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | TenantType>('all');
   const [filterOverage, setFilterOverage] = useState(false);
   const [filterUnpaid, setFilterUnpaid] = useState(false);
   const [sortBy, setSortBy] = useState<'amount' | 'usage' | null>(null);
@@ -70,11 +68,28 @@ export default function Billing() {
   const [invoices, setInvoices] = useState<Invoice[]>([...mockInvoices]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const summary = getBillingSummary();
+  // Compute billing summary based on global filter
+  const summary = (() => {
+    const base = globalFilter === 'all' ? mockTenants : mockTenants.filter((t) => t.type === globalFilter);
+    const activeTenants = base.filter((t) => t.status === 'active');
+    const wpLicenses = activeTenants.filter((t) => t.type === 'wp' && t.licenseStatus === 'active').length;
+    const apiCalls = activeTenants
+      .filter((t) => t.type === 'api')
+      .reduce((sum, t) => sum + (t.callsThisMonth || 0), 0);
+    const tenantIds = new Set(base.map((t) => t.id));
+    const currentMonthInvoices = mockInvoices.filter((inv) => inv.date.startsWith('2026-04') && tenantIds.has(inv.tenantId));
+    const revenue = currentMonthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    return {
+      totalActiveTenants: activeTenants.length,
+      totalWPLicenses: wpLicenses,
+      totalAPICallsThisMonth: apiCalls,
+      estimatedRevenueThisMonth: revenue,
+    };
+  })();
 
   const tenants = [...mockTenants];
   let filtered = tenants.filter((t) => {
-    if (filterType !== 'all' && t.type !== filterType) return false;
+    if (globalFilter !== 'all' && t.type !== globalFilter) return false;
     if (filterOverage && getOverage(t) === 0) return false;
     if (filterUnpaid) {
       const invStatus = getInvoiceStatus(t);
@@ -241,19 +256,6 @@ export default function Billing() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
-          {(['all', 'wp', 'api'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setFilterType(v)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                filterType === v ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {v === 'all' ? 'All Types' : v.toUpperCase()}
-            </button>
-          ))}
-        </div>
         <button
           onClick={() => setFilterOverage((p) => !p)}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${

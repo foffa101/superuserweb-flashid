@@ -16,6 +16,7 @@ import {
   type LicenseStatus,
   type BillingCycle,
 } from '../lib/api';
+import { useGlobalFilter } from '../lib/FilterContext';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -54,10 +55,10 @@ function emptyTenant(type: TenantType): Partial<Tenant> {
 type View = 'list' | 'detail' | 'form';
 
 export default function Tenants() {
+  const { filter: globalFilter } = useGlobalFilter();
   const [tenants, setTenants] = useState<Tenant[]>([...mockTenants]);
   const [view, setView] = useState<View>('list');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [filterType, setFilterType] = useState<'all' | TenantType>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | TenantStatus>('all');
   const [formData, setFormData] = useState<Partial<Tenant>>({});
   const [isEditing, setIsEditing] = useState(false);
@@ -65,13 +66,14 @@ export default function Tenants() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filteredTenants = tenants.filter((t) => {
-    if (filterType !== 'all' && t.type !== filterType) return false;
+    if (globalFilter !== 'all' && t.type !== globalFilter) return false;
     if (filterStatus !== 'all' && t.status !== filterStatus) return false;
     return true;
   });
 
   const openAdd = () => {
-    setFormData(emptyTenant('wp'));
+    const defaultType: TenantType = globalFilter === 'api' ? 'api' : globalFilter === 'wp' ? 'wp' : 'wp';
+    setFormData(emptyTenant(defaultType));
     setIsEditing(false);
     setView('form');
   };
@@ -461,19 +463,6 @@ export default function Tenants() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
-          {(['all', 'wp', 'api'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setFilterType(v)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                filterType === v ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {v === 'all' ? 'All Types' : v.toUpperCase()}
-            </button>
-          ))}
-        </div>
         <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
           {(['all', 'active', 'suspended', 'cancelled'] as const).map((v) => (
             <button
