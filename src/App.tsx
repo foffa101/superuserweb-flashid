@@ -4,6 +4,7 @@ import { onAuthChange, signOut, type User } from './lib/firebase';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
 import { FilterProvider } from './lib/FilterContext';
+import { QRVerification } from './components/QRVerification';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -24,6 +25,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
+  const [isQrVerified, setIsQrVerified] = useState(false);
 
   // Apply saved theme on mount
   useEffect(() => {
@@ -101,6 +103,7 @@ export default function App() {
         checkAccess(u);
       } else {
         setAccessStatus('checking');
+        setIsQrVerified(false);
       }
     });
     return unsubscribe;
@@ -148,6 +151,17 @@ export default function App() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // QR MFA gate — after SSO + whitelist check, before portal access
+  if (user && accessStatus === 'granted' && !isQrVerified) {
+    return (
+      <QRVerification
+        userId={user.uid}
+        onVerified={() => setIsQrVerified(true)}
+        onCancel={() => signOut()}
+      />
     );
   }
 
