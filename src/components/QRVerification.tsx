@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createSession, subscribeToSession } from '../lib/sessions';
 import type { AuthSession } from '../lib/sessions';
+import { ChallengeDisplay } from './ChallengeDisplay';
+import type { ChallengeData } from '../lib/challenges';
 import {
   QrCode,
   CheckCircle,
@@ -30,6 +32,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [secondsLeft, setSecondsLeft] = useState(90);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [challengeData, setChallengeData] = useState<ChallengeData | null>(null);
   const [downloadView, setDownloadView] = useState<DownloadView>('none');
 
   const unsubRef = useRef<(() => void) | null>(null);
@@ -63,6 +66,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
       unsubRef.current = subscribeToSession(result.sessionId, (session) => {
         if (!session) return;
+        if (session.challenge_data) setChallengeData(session.challenge_data);
         if (session.status === 'approved') {
           if (session.uid && session.uid !== userId) {
             setError('Verification failed: approver identity mismatch. Please try again with the correct account.');
@@ -196,6 +200,9 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 />
               </div>
             </div>
+
+            {/* Challenge display */}
+            {challengeData && <ChallengeDisplay challengeData={challengeData} />}
 
             {/* Waiting indicator */}
             <div className="flex items-center justify-center gap-2 text-slate-400">
