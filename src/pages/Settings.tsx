@@ -136,7 +136,7 @@ export default function Settings({ user }: SettingsProps) {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out</p>
+          <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out from this portal</p>
         </div>
       </section>
 
@@ -178,7 +178,7 @@ export default function Settings({ user }: SettingsProps) {
           </label>
           <input
             type="number"
-            min="500"
+            min="1000"
             max="5000"
             step="100"
             value={pollInterval}
@@ -186,7 +186,7 @@ export default function Settings({ user }: SettingsProps) {
             className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
           />
           <p className="text-xs text-slate-400 mt-1">
-            How frequently the browser checks for approval status (500-5000ms).
+            How frequently the browser checks for the verification approval status from Flash ID app (1000-5000ms).
           </p>
         </div>
       </section>

@@ -72,12 +72,14 @@ export default function Security() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-red-100 rounded-xl">
+          <ShieldAlert className="w-5 h-5 text-red-600" />
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Platform Security</h1>
           <p className="text-sm text-slate-500 mt-1">Manage rate limiting, bans, and geo settings</p>
         </div>
-        <ShieldAlert className="h-6 w-6 text-red-500" />
       </div>
 
       {/* Rate Limiting */}

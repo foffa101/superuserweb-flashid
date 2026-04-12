@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, ScrollText } from 'lucide-react';
 import EventRow from '../components/EventRow';
 import { mockEvents, mockTenants, type EventType, type EventStatus, type PlatformEvent } from '../lib/api';
 import { useGlobalFilter } from '../lib/FilterContext';
@@ -97,9 +97,14 @@ export default function Events() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Platform Event Log</h1>
-          <p className="text-sm text-slate-500 mt-1">{filtered.length} events {filtered.length !== events.length && `(of ${events.length} total)`}</p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-xl">
+            <ScrollText className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Platform Event Log</h1>
+            <p className="text-sm text-slate-500 mt-1">{filtered.length} events {filtered.length !== events.length && `(of ${events.length} total)`}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button

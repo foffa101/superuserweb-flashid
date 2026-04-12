@@ -2,7 +2,7 @@
  * QR verification session management via Firestore.
  * Collection: auth_sessions/{sessionId}
  *
- * The FlashID mobile app reads these sessions and approves/denies them.
+ * The Flash ID mobile app reads these sessions and approves/denies them.
  */
 
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';

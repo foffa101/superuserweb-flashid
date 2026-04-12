@@ -452,9 +452,14 @@ export default function Tenants() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tenant Management</h1>
-          <p className="text-sm text-slate-500 mt-1">{filteredTenants.length} tenants</p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-xl">
+            <Building2 className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Tenant Management</h1>
+            <p className="text-sm text-slate-500 mt-1">{filteredTenants.length} tenants</p>
+          </div>
         </div>
         <button onClick={openAdd} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2">
           <Plus className="h-4 w-4" /> Add Tenant

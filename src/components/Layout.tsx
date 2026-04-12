@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
   DollarSign,
   ShieldAlert,
   ScrollText,
+  BookOpen,
   Settings,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ const allNavItems = [
   { to: '/security', label: 'Security', icon: ShieldAlert },
   { to: '/events', label: 'Events', icon: ScrollText },
   { to: '/billing', label: 'Billing', icon: DollarSign },
+  { to: '/documentation', label: 'Documentation', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -34,6 +36,7 @@ export default function Layout({ user }: LayoutProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { filter, setFilter } = useGlobalFilter();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Hide Security nav item when filter is 'wp'
   const navItems = filter === 'wp'
@@ -61,23 +64,23 @@ export default function Layout({ user }: LayoutProps) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          return (
+            <button
+              key={item.to}
+              onClick={() => { navigate(item.to); setSidebarOpen(false); }}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full ${
                 isActive
                   ? 'bg-red-600 text-white'
                   : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-              }`
-            }
-          >
-            <item.icon className="h-5 w-5" />
-            {item.label}
-          </NavLink>
-        ))}
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="px-3 py-4 border-t border-slate-700">
@@ -176,7 +179,7 @@ export default function Layout({ user }: LayoutProps) {
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
                     <p className="text-sm font-bold text-slate-900 truncate">{user.email}</p>
                   </div>
-                  {navItems.map((item) => (
+                  {navItems.filter((item) => ['/dashboard', '/documentation', '/settings'].includes(item.to)).map((item) => (
                     <button
                       key={item.to}
                       onClick={() => { navigate(item.to); setIsUserMenuOpen(false); }}
