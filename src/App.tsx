@@ -26,7 +26,19 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
-  const [isQrVerified, setIsQrVerified] = useState(false);
+  const [isQrVerified, setIsQrVerified] = useState(() => {
+    const level = localStorage.getItem('superadmin-security-level') || 'secure';
+    if (level === 'most-secure') return false;
+    if (level === 'secure') return sessionStorage.getItem('superadmin-qr-verified') === '1';
+    if (level === 'more-secure') {
+      const ts = localStorage.getItem('superadmin-qr-verified-at');
+      if (!ts) return false;
+      const timeout = localStorage.getItem('superadmin-session-timeout') || '4h';
+      const ms: Record<string, number> = { '5m': 300000, '15m': 900000, '30m': 1800000, '1h': 3600000, '2h': 7200000, '4h': 14400000, '8h': 28800000, '12h': 43200000, '18h': 64800000, '24h': 86400000, 'never': Infinity };
+      return Date.now() - parseInt(ts) < (ms[timeout] || 14400000);
+    }
+    return false;
+  });
 
   // Apply saved theme on mount
   useEffect(() => {
@@ -160,7 +172,12 @@ export default function App() {
     return (
       <QRVerification
         userId={user.uid}
-        onVerified={() => setIsQrVerified(true)}
+        onVerified={() => {
+          const level = localStorage.getItem('superadmin-security-level') || 'secure';
+          if (level === 'secure') sessionStorage.setItem('superadmin-qr-verified', '1');
+          if (level === 'more-secure') localStorage.setItem('superadmin-qr-verified-at', String(Date.now()));
+          setIsQrVerified(true);
+        }}
         onCancel={() => signOut()}
       />
     );

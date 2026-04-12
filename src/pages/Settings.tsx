@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { type User } from '../lib/firebase';
 
 interface SettingsProps {
@@ -30,6 +30,9 @@ export default function Settings({ user }: SettingsProps) {
   const [sessionTimeout, setSessionTimeout] = useState(() => {
     return localStorage.getItem('superadmin-session-timeout') || '4h';
   });
+  const [securityLevel, setSecurityLevel] = useState(() => {
+    return localStorage.getItem('superadmin-security-level') || 'secure';
+  });
   const [pollInterval, setPollInterval] = useState(() => {
     return localStorage.getItem('superadmin-poll-interval') || '1500';
   });
@@ -54,6 +57,7 @@ export default function Settings({ user }: SettingsProps) {
   const handleSave = () => {
     localStorage.setItem('superadmin-theme', theme);
     localStorage.setItem('superadmin-session-timeout', sessionTimeout);
+    localStorage.setItem('superadmin-security-level', securityLevel);
     localStorage.setItem('superadmin-poll-interval', pollInterval);
     localStorage.setItem('superadmin-require-face', requireFace ? '1' : '0');
     localStorage.setItem('superadmin-require-fingerprint', requireFingerprint ? '1' : '0');
@@ -137,6 +141,46 @@ export default function Settings({ user }: SettingsProps) {
             ))}
           </select>
           <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out from this portal</p>
+        </div>
+        <div className="mt-6 pt-6 border-t border-slate-100">
+          <label className="block text-sm font-medium text-slate-700 mb-3">
+            Verification Persistence
+          </label>
+          <div className="space-y-2">
+            {[
+              { value: 'secure', icon: Shield, label: 'Secure', desc: 'Verification persists across page refreshes, clears when browser tab closes', color: 'text-green-500' },
+              { value: 'more-secure', icon: ShieldCheck, label: 'More Secure', desc: 'Verification persists for the session timeout duration, then re-verifies', color: 'text-amber-500' },
+              { value: 'most-secure', icon: ShieldAlert, label: 'Most Secure', desc: 'Verification required on every page load', color: 'text-red-500' },
+            ].map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  securityLevel === opt.value
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="securityLevel"
+                  value={opt.value}
+                  checked={securityLevel === opt.value}
+                  onChange={(e) => setSecurityLevel(e.target.value)}
+                  className="mt-1 accent-red-600"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <opt.icon className={`h-4 w-4 ${opt.color}`} />
+                    <span className="text-sm font-medium text-slate-900">{opt.label}</span>
+                    {opt.value === 'secure' && (
+                      <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">Default</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
 
