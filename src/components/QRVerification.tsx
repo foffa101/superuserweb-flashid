@@ -49,7 +49,21 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     setDownloadView('none');
 
     try {
-      const result = await createSession(userId);
+      const biometrics = {
+        face: localStorage.getItem('superadmin-require-face') === '1',
+        fingerprint: localStorage.getItem('superadmin-require-fingerprint') === '1',
+        voice: localStorage.getItem('superadmin-require-voice') === '1',
+      };
+      let verificationMethod: string | undefined;
+      try {
+        const methods = JSON.parse(localStorage.getItem('superadmin-verification-methods') || '{}');
+        const enabled = Object.keys(methods).filter(k => methods[k]);
+        if (enabled.length > 0) {
+          verificationMethod = enabled.length === 1 ? enabled[0] : enabled[Math.floor(Math.random() * enabled.length)];
+          if (verificationMethod === 'random') verificationMethod = 'random';
+        }
+      } catch {}
+      const result = await createSession(userId, verificationMethod, biometrics);
       setSessionId(result.sessionId);
       setQrUrl(result.qrUrl);
 

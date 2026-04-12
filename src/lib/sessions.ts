@@ -41,9 +41,16 @@ function generateSessionId(): string {
  * Create a new QR verification session in Firestore.
  * Returns the session ID, a deep-link URL for the mobile app, and the challenge.
  */
+export interface BiometricRequirements {
+  face?: boolean;
+  fingerprint?: boolean;
+  voice?: boolean;
+}
+
 export async function createSession(
   userId: string,
   verificationMethod?: string,
+  biometrics?: BiometricRequirements,
 ): Promise<{ sessionId: string; qrUrl: string; challenge: string }> {
   const sessionId = generateSessionId();
   const challenge = randomHex(16); // 32 hex chars
@@ -69,6 +76,7 @@ export async function createSession(
   await setDoc(doc(db, 'auth_sessions', sessionId), session);
 
   let qrUrl = `flashid://auth?sid=${sessionId}&url=superadmin.flashid.com&name=${encodeURIComponent('Flash ID Super Admin')}&cb=firebase&ch=${challenge}`;
+  qrUrl += `&v=${biometrics?.face ? '1' : '0'}&k=${biometrics?.fingerprint ? '1' : '0'}&w=${biometrics?.voice ? '1' : '0'}`;
   if (verificationMethod && verificationMethod !== 'none') {
     qrUrl += `&m=${verificationMethod}`;
   }

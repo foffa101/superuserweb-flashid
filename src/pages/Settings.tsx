@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle } from 'lucide-react';
 import { type User } from '../lib/firebase';
 
 interface SettingsProps {
@@ -42,6 +42,17 @@ export default function Settings({ user }: SettingsProps) {
   const [requireFingerprint, setRequireFingerprint] = useState(() => localStorage.getItem('superadmin-require-fingerprint') === '1');
   const [requireVoice, setRequireVoice] = useState(() => localStorage.getItem('superadmin-require-voice') === '1');
 
+  // Verification methods
+  const [enabledMethods, setEnabledMethods] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('superadmin-verification-methods') || '{}');
+    } catch { return {}; }
+  });
+
+  const toggleMethod = (method: string) => {
+    setEnabledMethods(prev => ({ ...prev, [method]: !prev[method] }));
+  };
+
   // Save feedback
   const [saved, setSaved] = useState(false);
 
@@ -62,6 +73,7 @@ export default function Settings({ user }: SettingsProps) {
     localStorage.setItem('superadmin-require-face', requireFace ? '1' : '0');
     localStorage.setItem('superadmin-require-fingerprint', requireFingerprint ? '1' : '0');
     localStorage.setItem('superadmin-require-voice', requireVoice ? '1' : '0');
+    localStorage.setItem('superadmin-verification-methods', JSON.stringify(enabledMethods));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -233,6 +245,52 @@ export default function Settings({ user }: SettingsProps) {
             How frequently the browser checks for the verification approval status from Flash ID app (1000-5000ms).
           </p>
         </div>
+      </section>
+
+      {/* Verification Methods */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Verification Methods</h2>
+        <div className="divide-y divide-slate-100">
+          {([
+            { key: 'type_code', icon: Hash, label: 'Type Code', desc: 'User types a 6-digit code shown on the site', color: 'text-blue-500', bg: 'bg-blue-50', category: 'OTP' },
+            { key: 'select_code', icon: ListChecks, label: 'Select Code', desc: 'User selects the correct code from multiple choices', color: 'text-blue-500', bg: 'bg-blue-50', category: 'OTP' },
+            { key: 'emoji_match', icon: Smile, label: 'Emoji Match', desc: 'Find 3 target emojis in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'number_sequence', icon: Grid3X3, label: 'Number Sequence', desc: 'Tap numbers in the correct order', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'word_match', icon: Type, label: 'Word Match', desc: 'Find 3 target words in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'icon_match', icon: Grid3X3, label: 'Icon Match', desc: 'Find 3 target icons in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'color_match', icon: Palette, label: 'Color Match', desc: 'Find 3 target colors in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'shape_match', icon: Shapes, label: 'Shape Match', desc: 'Find 3 target shapes in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'flag_match', icon: Flag, label: 'Flag Match', desc: 'Find 3 target flags in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
+            { key: 'tap_pattern', icon: Hand, label: 'Tap Pattern', desc: 'Watch a pattern and reproduce it on a grid', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
+            { key: 'shake_verify', icon: Smartphone, label: 'Shake to Verify', desc: 'Shake the phone to confirm identity', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
+            { key: 'draw_match', icon: PenTool, label: 'Draw Match', desc: 'Draw a shape shown on screen', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
+            { key: 'voice_phrase', icon: Mic, label: 'Voice Phrase', desc: 'Read a phrase aloud for speech recognition', color: 'text-pink-500', bg: 'bg-pink-50', category: 'Audio' },
+            { key: 'animal_sound', icon: Volume2, label: 'Animal Sound', desc: 'Listen to a sound and identify the animal', color: 'text-pink-500', bg: 'bg-pink-50', category: 'Audio' },
+            { key: 'random', icon: Shuffle, label: 'Random', desc: 'Randomly pick a different method each login', color: 'text-slate-500', bg: 'bg-slate-100', category: 'Other' },
+          ] as const).map((item) => (
+            <div key={item.key} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${item.bg}`}>
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-900">{item.label}</p>
+                  <p className="text-xs text-slate-400">{item.desc}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => toggleMethod(item.key)}>
+                {enabledMethods[item.key] ? (
+                  <ToggleRight className="h-8 w-8 text-red-600" />
+                ) : (
+                  <ToggleLeft className="h-8 w-8 text-slate-300" />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400 mt-3">
+          Enable one or more methods. If multiple are enabled, one is randomly chosen each login. If none are enabled, only biometric verification is used.
+        </p>
       </section>
 
       {/* Save */}
