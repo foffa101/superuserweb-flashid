@@ -5,6 +5,7 @@
 
 export interface ChallengeData {
   method: string;
+  target?: string;
   grid?: string[];
   targets?: string[];
   sequence?: number[];
@@ -107,9 +108,10 @@ function randomInt(min: number, max: number): number {
 // --- Generators ---
 
 function generateGridMatch(pool: string[], method: string): ChallengeData {
-  const grid = shuffle(pickN(pool, 9));
-  const targets = pickN(grid, 3);
-  return { method, grid, targets };
+  const items = shuffle(pickN(pool, 4));
+  const target = items[0];
+  const choices = shuffle([...items]);
+  return { method, target, choices, correct_index: choices.indexOf(target) };
 }
 
 function generateNumberSequence(): ChallengeData {

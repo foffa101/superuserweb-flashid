@@ -42,47 +42,51 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
         </>
       )}
 
-      {/* Grid match methods */}
-      {['emoji_match', 'word_match', 'icon_match', 'flag_match', 'shape_match', 'number_sequence'].includes(method) && (
+      {/* Visual match methods — show 1 target item */}
+      {['emoji_match', 'word_match', 'icon_match', 'flag_match', 'shape_match'].includes(method) && cd.target && (
         <>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            {{
-              emoji_match: 'Find these emojis in the app',
-              word_match: 'Find these words in the app',
-              icon_match: 'Find these icons in the app',
-              flag_match: 'Find these flags in the app',
-              shape_match: 'Find these shapes in the app',
-              number_sequence: 'Tap these numbers in order in the app',
-            }[method]}
+            Find this on the app
+          </p>
+          <div className="flex justify-center">
+            <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 inline-flex items-center justify-center">
+              <span className={method === 'word_match' ? 'text-lg font-semibold text-white' : 'text-5xl'}>
+                {cd.target}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Color match — show 1 target color */}
+      {method === 'color_match' && cd.target && (
+        <>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            Find this color on the app
+          </p>
+          <div className="flex justify-center">
+            <div
+              className="w-16 h-16 rounded-xl border-2 border-white/20"
+              style={{ background: COLOR_MAP[cd.target] || '#94A3B8' }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Number sequence — keeps grid display */}
+      {method === 'number_sequence' && (
+        <>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            Tap the numbers in order on the app
           </p>
           <div className="grid grid-cols-3 gap-1.5 max-w-[220px] mx-auto">
             {cd.grid?.map((item, i) => (
               <div
                 key={i}
-                className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center min-h-[44px]"
+                className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center min-h-[44px] text-2xl"
               >
-                <span className={method === 'word_match' ? 'text-xs text-white' : 'text-2xl'}>
-                  {item}
-                </span>
+                {item}
               </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Color match */}
-      {method === 'color_match' && (
-        <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            Find these colors in the app
-          </p>
-          <div className="grid grid-cols-3 gap-1.5 max-w-[220px] mx-auto">
-            {cd.grid?.map((color, i) => (
-              <div
-                key={i}
-                className="rounded-lg min-h-[44px] border-2 border-white/15"
-                style={{ background: COLOR_MAP[color] || '#94A3B8' }}
-              />
             ))}
           </div>
         </>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5 } from 'lucide-react';
 import { type User } from '../lib/firebase';
 
 interface SettingsProps {
@@ -41,6 +41,21 @@ export default function Settings({ user }: SettingsProps) {
   const [requireFace, setRequireFace] = useState(() => localStorage.getItem('superadmin-require-face') === '1');
   const [requireFingerprint, setRequireFingerprint] = useState(() => localStorage.getItem('superadmin-require-fingerprint') === '1');
   const [requireVoice, setRequireVoice] = useState(() => localStorage.getItem('superadmin-require-voice') === '1');
+  const [biometricNone, setBiometricNone] = useState(() => localStorage.getItem('superadmin-biometric-none') === '1');
+  const [biometricRandom, setBiometricRandom] = useState(() => localStorage.getItem('superadmin-biometric-random') === '1');
+
+  const handleBiometricNone = (on: boolean) => {
+    setBiometricNone(on);
+    if (on) { setRequireFace(false); setRequireFingerprint(false); setRequireVoice(false); setBiometricRandom(false); }
+  };
+  const handleBiometricRandom = (on: boolean) => {
+    setBiometricRandom(on);
+    if (on) { setBiometricNone(false); }
+  };
+  const handleBiometricToggle = (setter: (v: boolean) => void, value: boolean) => {
+    setter(!value);
+    if (!value) { setBiometricNone(false); } // turning one on → deselect None
+  };
 
   // Verification methods
   const [enabledMethods, setEnabledMethods] = useState<Record<string, boolean>>(() => {
@@ -73,6 +88,8 @@ export default function Settings({ user }: SettingsProps) {
     localStorage.setItem('superadmin-require-face', requireFace ? '1' : '0');
     localStorage.setItem('superadmin-require-fingerprint', requireFingerprint ? '1' : '0');
     localStorage.setItem('superadmin-require-voice', requireVoice ? '1' : '0');
+    localStorage.setItem('superadmin-biometric-none', biometricNone ? '1' : '0');
+    localStorage.setItem('superadmin-biometric-random', biometricRandom ? '1' : '0');
     localStorage.setItem('superadmin-verification-methods', JSON.stringify(enabledMethods));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -196,14 +213,16 @@ export default function Settings({ user }: SettingsProps) {
         </div>
       </section>
 
-      {/* Biometric Management */}
+      {/* Biometric Verification */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Biometric Management</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Biometric Verification</h2>
         <div className="divide-y divide-slate-100">
           {[
-            { icon: ScanFace, label: 'Face Recognition', desc: 'Require face verification for login', color: 'text-blue-500', bg: 'bg-blue-50', value: requireFace, set: setRequireFace },
-            { icon: Fingerprint, label: 'Fingerprint', desc: 'Require fingerprint verification for login', color: 'text-green-500', bg: 'bg-green-50', value: requireFingerprint, set: setRequireFingerprint },
-            { icon: Mic, label: 'Voice Print', desc: 'Require voice verification for login', color: 'text-purple-500', bg: 'bg-purple-50', value: requireVoice, set: setRequireVoice },
+            { icon: ScanFace, label: 'Face Recognition', desc: 'Require face verification for login', color: 'text-blue-500', bg: 'bg-blue-50', value: requireFace, toggle: () => handleBiometricToggle(setRequireFace, requireFace) },
+            { icon: Fingerprint, label: 'Fingerprint', desc: 'Require fingerprint verification for login', color: 'text-green-500', bg: 'bg-green-50', value: requireFingerprint, toggle: () => handleBiometricToggle(setRequireFingerprint, requireFingerprint) },
+            { icon: Mic, label: 'Voice Print', desc: 'Require voice verification for login', color: 'text-purple-500', bg: 'bg-purple-50', value: requireVoice, toggle: () => handleBiometricToggle(setRequireVoice, requireVoice) },
+            { icon: Dice5, label: 'Random', desc: 'Randomly pick any enrolled biometric method', color: 'text-amber-500', bg: 'bg-amber-50', value: biometricRandom, toggle: () => handleBiometricRandom(!biometricRandom) },
+            { icon: Ban, label: 'None', desc: 'Skip biometric verification — challenge only', color: 'text-slate-400', bg: 'bg-slate-100', value: biometricNone, toggle: () => handleBiometricNone(!biometricNone) },
           ].map((item) => (
             <div key={item.label} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
               <div className="flex items-center gap-3">
@@ -215,7 +234,7 @@ export default function Settings({ user }: SettingsProps) {
                   <p className="text-xs text-slate-400">{item.desc}</p>
                 </div>
               </div>
-              <button type="button" onClick={() => item.set(!item.value)}>
+              <button type="button" onClick={item.toggle}>
                 {item.value ? (
                   <ToggleRight className="h-8 w-8 text-red-600" />
                 ) : (
@@ -226,7 +245,7 @@ export default function Settings({ user }: SettingsProps) {
           ))}
         </div>
         <p className="text-xs text-slate-400 mt-3">
-          If none selected, the app will use any enrolled method.
+          Select which biometric methods are required. "None" skips biometric verification entirely.
         </p>
         <div className="mt-4 pt-4 border-t border-slate-100">
           <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -247,50 +266,92 @@ export default function Settings({ user }: SettingsProps) {
         </div>
       </section>
 
-      {/* Verification Methods */}
+      {/* Challenge Verification */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Verification Methods</h2>
-        <div className="divide-y divide-slate-100">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Challenge Verification</h2>
+        <div className="space-y-1">
+          {/* None */}
+          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${!Object.values(enabledMethods).some(v => v) ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <input type="radio" name="challengeMethod" checked={!Object.values(enabledMethods).some(v => v)} onChange={() => setEnabledMethods({})} className="accent-red-600" />
+            <span className="text-sm font-medium text-slate-900">None (biometric only)</span>
+          </label>
+
+          {/* OTP */}
+          <p className="text-xs font-bold text-red-400 uppercase tracking-widest pt-3 pb-1 px-1">OTP</p>
           {([
-            { key: 'type_code', icon: Hash, label: 'Type Code', desc: 'User types a 6-digit code shown on the site', color: 'text-blue-500', bg: 'bg-blue-50', category: 'OTP' },
-            { key: 'select_code', icon: ListChecks, label: 'Select Code', desc: 'User selects the correct code from multiple choices', color: 'text-blue-500', bg: 'bg-blue-50', category: 'OTP' },
-            { key: 'emoji_match', icon: Smile, label: 'Emoji Match', desc: 'Find 3 target emojis in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'number_sequence', icon: Grid3X3, label: 'Number Sequence', desc: 'Tap numbers in the correct order', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'word_match', icon: Type, label: 'Word Match', desc: 'Find 3 target words in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'icon_match', icon: Grid3X3, label: 'Icon Match', desc: 'Find 3 target icons in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'color_match', icon: Palette, label: 'Color Match', desc: 'Find 3 target colors in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'shape_match', icon: Shapes, label: 'Shape Match', desc: 'Find 3 target shapes in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'flag_match', icon: Flag, label: 'Flag Match', desc: 'Find 3 target flags in a 3x3 grid', color: 'text-amber-500', bg: 'bg-amber-50', category: 'Visual' },
-            { key: 'tap_pattern', icon: Hand, label: 'Tap Pattern', desc: 'Watch a pattern and reproduce it on a grid', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
-            { key: 'shake_verify', icon: Smartphone, label: 'Shake to Verify', desc: 'Shake the phone to confirm identity', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
-            { key: 'draw_match', icon: PenTool, label: 'Draw Match', desc: 'Draw a shape shown on screen', color: 'text-indigo-500', bg: 'bg-indigo-50', category: 'Gesture' },
-            { key: 'voice_phrase', icon: Mic, label: 'Voice Phrase', desc: 'Read a phrase aloud for speech recognition', color: 'text-pink-500', bg: 'bg-pink-50', category: 'Audio' },
-            { key: 'animal_sound', icon: Volume2, label: 'Animal Sound', desc: 'Listen to a sound and identify the animal', color: 'text-pink-500', bg: 'bg-pink-50', category: 'Audio' },
-            { key: 'random', icon: Shuffle, label: 'Random', desc: 'Randomly pick a different method each login', color: 'text-slate-500', bg: 'bg-slate-100', category: 'Other' },
+            { key: 'type_code', label: 'Type Code (6-digit)', desc: 'App displays code — user types it into site input box' },
+            { key: 'select_code', label: 'Select Code (multiple choice)', desc: 'Site shows 1 code — user selects matching one from 4 choices on app' },
           ] as const).map((item) => (
-            <div key={item.key} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${item.bg}`}>
-                  <item.icon className={`h-5 w-5 ${item.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{item.label}</p>
-                  <p className="text-xs text-slate-400">{item.desc}</p>
-                </div>
+            <label key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${enabledMethods[item.key] ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="challengeMethod" checked={!!enabledMethods[item.key]} onChange={() => setEnabledMethods({ [item.key]: true })} className="accent-red-600" />
+              <div>
+                <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                <p className="text-xs text-slate-400">{item.desc}</p>
               </div>
-              <button type="button" onClick={() => toggleMethod(item.key)}>
-                {enabledMethods[item.key] ? (
-                  <ToggleRight className="h-8 w-8 text-red-600" />
-                ) : (
-                  <ToggleLeft className="h-8 w-8 text-slate-300" />
-                )}
-              </button>
-            </div>
+            </label>
           ))}
+
+          {/* Visual Challenge */}
+          <p className="text-xs font-bold text-red-400 uppercase tracking-widest pt-3 pb-1 px-1">Visual Challenge</p>
+          {([
+            { key: 'emoji_match', label: 'Emoji Match', desc: 'Site shows 1 emoji — user selects matching one from 4 choices on app' },
+            { key: 'color_match', label: 'Color Match', desc: 'Site shows 1 color — user selects matching one from 4 choices on app' },
+            { key: 'shape_match', label: 'Shape Match', desc: 'Site shows 1 shape — user selects matching one from 4 choices on app' },
+            { key: 'icon_match', label: 'Icon Match', desc: 'Site shows 1 icon — user selects matching one from 4 choices on app' },
+            { key: 'flag_match', label: 'Flag Match', desc: 'Site shows 1 flag — user selects matching one from 4 choices on app' },
+            { key: 'word_match', label: 'Word Match', desc: 'Site shows 1 word — user selects matching one from 4 choices on app' },
+            { key: 'number_sequence', label: 'Number Sequence', desc: 'User watches numbers light up on app and taps them in order' },
+          ] as const).map((item) => (
+            <label key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${enabledMethods[item.key] ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="challengeMethod" checked={!!enabledMethods[item.key]} onChange={() => setEnabledMethods({ [item.key]: true })} className="accent-red-600" />
+              <div>
+                <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                <p className="text-xs text-slate-400">{item.desc}</p>
+              </div>
+            </label>
+          ))}
+
+          {/* Gesture */}
+          <p className="text-xs font-bold text-red-400 uppercase tracking-widest pt-3 pb-1 px-1">Gesture</p>
+          {([
+            { key: 'tap_pattern', label: 'Tap Pattern', desc: 'User watches pattern on app and reproduces it by tapping same cells' },
+            { key: 'shake_verify', label: 'Shake to Verify', desc: 'App detects shake motion and confirms identity' },
+            { key: 'draw_match', label: 'Draw Match', desc: 'Site displays a shape — user draws it on the app canvas' },
+          ] as const).map((item) => (
+            <label key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${enabledMethods[item.key] ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="challengeMethod" checked={!!enabledMethods[item.key]} onChange={() => setEnabledMethods({ [item.key]: true })} className="accent-red-600" />
+              <div>
+                <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                <p className="text-xs text-slate-400">{item.desc}</p>
+              </div>
+            </label>
+          ))}
+
+          {/* Audio */}
+          <p className="text-xs font-bold text-red-400 uppercase tracking-widest pt-3 pb-1 px-1">Audio</p>
+          {([
+            { key: 'voice_phrase', label: 'Voice Phrase', desc: 'User reads a phrase aloud — app captures and verifies voice' },
+            { key: 'animal_sound', label: 'Animal Sound', desc: 'Sound plays on site — user selects matching animal on app' },
+          ] as const).map((item) => (
+            <label key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${enabledMethods[item.key] ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="challengeMethod" checked={!!enabledMethods[item.key]} onChange={() => setEnabledMethods({ [item.key]: true })} className="accent-red-600" />
+              <div>
+                <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                <p className="text-xs text-slate-400">{item.desc}</p>
+              </div>
+            </label>
+          ))}
+
+          {/* Random */}
+          <p className="text-xs font-bold text-red-400 uppercase tracking-widest pt-3 pb-1 px-1">Random</p>
+          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${enabledMethods['random'] ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <input type="radio" name="challengeMethod" checked={!!enabledMethods['random']} onChange={() => setEnabledMethods({ random: true })} className="accent-red-600" />
+            <div>
+              <span className="text-sm font-medium text-slate-900">Random (different each login)</span>
+              <p className="text-xs text-slate-400">Randomly picks a different method each login</p>
+            </div>
+          </label>
         </div>
-        <p className="text-xs text-slate-400 mt-3">
-          Enable one or more methods. If multiple are enabled, one is randomly chosen each login. If none are enabled, only biometric verification is used.
-        </p>
       </section>
 
       {/* Save */}
