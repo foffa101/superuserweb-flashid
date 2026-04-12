@@ -37,6 +37,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qrTimeoutRef = useRef(90);
 
   const startSession = useCallback(async () => {
     unsubRef.current?.();
@@ -45,7 +46,6 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     setIsCreating(true);
     setError(null);
     setStatus('pending');
-    setSecondsLeft(90);
     setDownloadView('none');
 
     try {
@@ -64,13 +64,16 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         }
       } catch {}
       const result = await createSession(userId, verificationMethod, biometrics);
+      const timeout = result.qrTimeout || 90;
+      qrTimeoutRef.current = timeout;
       setSessionId(result.sessionId);
       setQrUrl(result.qrUrl);
+      setSecondsLeft(timeout);
 
       const start = Date.now();
       timerRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - start) / 1000);
-        const remaining = Math.max(0, 90 - elapsed);
+        const remaining = Math.max(0, timeout - elapsed);
         setSecondsLeft(remaining);
         if (remaining === 0) {
           setStatus('expired');
@@ -122,7 +125,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     ? `https://quickchart.io/qr?text=${encodeURIComponent(qrUrl)}&size=300&margin=2&ecLevel=H`
     : '';
 
-  const progress = secondsLeft / 90;
+  const progress = secondsLeft / qrTimeoutRef.current;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">

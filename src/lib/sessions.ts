@@ -51,11 +51,13 @@ export async function createSession(
   userId: string,
   verificationMethod?: string,
   biometrics?: BiometricRequirements,
-): Promise<{ sessionId: string; qrUrl: string; challenge: string }> {
+  qrTimeoutSeconds?: number,
+): Promise<{ sessionId: string; qrUrl: string; challenge: string; qrTimeout: number }> {
+  const qrTimeout = qrTimeoutSeconds || parseInt(localStorage.getItem('superadmin-qr-timeout') || '90') || 90;
   const sessionId = generateSessionId();
   const challenge = randomHex(16); // 32 hex chars
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 90 * 1000); // 90 seconds
+  const expiresAt = new Date(now.getTime() + qrTimeout * 1000);
 
   const session: AuthSession = {
     userId,
@@ -81,7 +83,7 @@ export async function createSession(
     qrUrl += `&m=${verificationMethod}`;
   }
 
-  return { sessionId, qrUrl, challenge };
+  return { sessionId, qrUrl, challenge, qrTimeout };
 }
 
 /**
