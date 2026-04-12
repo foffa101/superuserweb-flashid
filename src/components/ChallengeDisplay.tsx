@@ -118,22 +118,33 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
         </p>
       )}
 
-      {/* Animal sound */}
-      {method === 'animal_sound' && (
+      {/* Animal sound — play button on site, selection on app */}
+      {method === 'animal_sound' && cd.sound_id && (
         <>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            Listen in the app, then tap the matching animal
+            Play the sound — select the animal on the app
           </p>
-          <div className="grid grid-cols-3 gap-1.5 max-w-[220px] mx-auto">
-            {cd.grid?.map((emoji, i) => (
-              <div
-                key={i}
-                className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center min-h-[44px] text-2xl"
-              >
-                {emoji}
-              </div>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if ('speechSynthesis' in window) {
+                const names: Record<string, string> = {
+                  dog: 'Dog', cat: 'Cat', cow: 'Cow', lion: 'Lion', bird: 'Bird',
+                  frog: 'Frog', horse: 'Horse', elephant: 'Elephant', monkey: 'Monkey',
+                  pig: 'Pig', duck: 'Duck', wolf: 'Wolf', rooster: 'Rooster', owl: 'Owl', bear: 'Bear',
+                };
+                const name = names[cd.sound_id!] || cd.sound_id;
+                const utterance = new SpeechSynthesisUtterance(`The ${name} says`);
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+              }
+            }}
+            className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
+          >
+            <span className="text-lg">&#9654;</span>
+            Play Sound
+          </button>
+          <p className="text-[10px] text-slate-500 mt-2">The user selects the matching animal on their phone</p>
         </>
       )}
     </div>
