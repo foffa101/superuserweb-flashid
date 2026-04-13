@@ -404,7 +404,7 @@ export default function Settings({ user }: SettingsProps) {
             </div>
           </div>
         </div>
-        <p className="text-xs text-slate-400 mt-3">Select which biometric methods are required. "None" skips biometric verification entirely.</p>
+        <p className="text-xs text-slate-400 mt-3">Select which biometric methods are required. "None" skips biometric verification entirely and "Random" selects one at random.</p>
       </section>
 
       {/* Challenge Verification */}
@@ -471,6 +471,7 @@ export default function Settings({ user }: SettingsProps) {
             );
           })}
         </div>
+        <p className="text-xs text-slate-400 mt-3">Select which verification methods are required. "None" skips challenge verification entirely and "Random" selects one at random.</p>
       </section>
 
       {/* Field Agents */}
