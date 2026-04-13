@@ -293,13 +293,35 @@ export async function updateSecuritySettings(data: Partial<SecuritySettings>): P
 
 // ─── Field Agents ───
 
+export const FIELD_AGENT_SCOPES = [
+  'identity-verify',
+  'transaction-verify',
+  'order-confirm',
+  'booking-confirm',
+  'check-in',
+  'db-config',
+  'modify-config',
+  'prescription-access',
+  'rx-refill',
+  'hipaa-auth',
+  'access-control',
+  'data-export',
+  'user-management',
+  'billing-action',
+  'security-change',
+  'system-config',
+] as const;
+
+export type FieldAgentScope = typeof FIELD_AGENT_SCOPES[number];
+
 export interface FieldAgent {
   id: string;
   action: string;
   actionLabel: string;
   page: string;
-  notifyEmail: string;
-  notifyUid: string;
+  siteName: string;
+  scope: FieldAgentScope | string;
+  notifyEmails: string[];
   enabled: boolean;
   createdBy: string;
   createdAt: string;
@@ -349,10 +371,12 @@ export async function createApprovalRequest(data: {
   action: string;
   actionLabel: string;
   page: string;
+  siteName?: string;
+  scope?: string;
   details: string;
   requestedBy: string;
   requestedByUid: string;
-  notifyEmail: string;
+  notifyEmails: string[];
 }): Promise<string> {
   const approvalId = `approval_${Date.now()}`;
   await setDoc(doc(db, 'admin_approvals', approvalId), {

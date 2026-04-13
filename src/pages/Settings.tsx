@@ -552,12 +552,22 @@ export default function Settings({ user }: SettingsProps) {
             {fieldAgents.map((agent) => (
               <div key={agent.id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${agent.enabled ? 'bg-cyan-50' : 'bg-slate-100'}`}>
+                  <div className={`p-2 rounded-lg ${agent.enabled ? 'bg-[#00F5D4]/10' : 'bg-slate-100'}`}>
                     <Shield className={`h-4 w-4 ${agent.enabled ? 'text-[#00F5D4]' : 'text-slate-400'}`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">{agent.actionLabel}</p>
-                    <p className="text-xs text-slate-400">{agent.page} — notifies {agent.notifyEmail}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-slate-400 capitalize">{agent.page?.replace(/_/g, ' ')}</p>
+                      {agent.scope && (
+                        <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-medium">{agent.scope}</span>
+                      )}
+                    </div>
+                    {agent.notifyEmails && agent.notifyEmails.length > 0 && (
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Notifies: {agent.notifyEmails.join(', ')}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

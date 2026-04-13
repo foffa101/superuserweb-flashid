@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Shield, X } from 'lucide-react';
-import { getFieldAgentForAction, saveFieldAgent, deleteFieldAgent, type FieldAgent } from '../lib/firestore';
+import { getFieldAgentForAction, saveFieldAgent, deleteFieldAgent, FIELD_AGENT_SCOPES, type FieldAgent } from '../lib/firestore';
 import { auth } from '../lib/firebase';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { app } from '../lib/firebase';
+
+const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
+
+const ACTION_LABEL_MAX = 40;
 
 interface FieldAgentIconProps {
   action: string;
@@ -12,32 +18,54 @@ interface FieldAgentIconProps {
 export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProps) {
   const [agent, setAgent] = useState<FieldAgent | null>(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [notifyEmail, setNotifyEmail] = useState('');
+  const [editLabel, setEditLabel] = useState(actionLabel);
+  const [scope, setScope] = useState('');
+  const [notifyEmails, setNotifyEmails] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [whitelistEmails, setWhitelistEmails] = useState<string[]>([]);
+
+  // Load whitelist emails from Access Management
+  useEffect(() => {
+    getDoc(doc(db, 'superadmin_config', 'whitelist')).then((snap) => {
+      if (snap.exists()) setWhitelistEmails(snap.data().emails || []);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getFieldAgentForAction(action).then((a) => {
       setAgent(a);
       if (a) {
-        setNotifyEmail(a.notifyEmail);
+        setEditLabel(a.actionLabel);
+        setScope(a.scope || '');
+        setNotifyEmails(a.notifyEmails || []);
         setEnabled(a.enabled);
+      } else {
+        setEditLabel(actionLabel);
       }
     });
-  }, [action]);
+  }, [action, actionLabel]);
 
   const isActive = agent?.enabled === true;
+
+  const toggleEmail = (email: string) => {
+    setNotifyEmails((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
+  };
 
   const handleSave = async () => {
     setSaving(true);
     const user = auth.currentUser;
+    const emails = notifyEmails.length > 0 ? notifyEmails : [user?.email || ''];
     const agentData: FieldAgent = {
       id: action,
       action,
-      actionLabel,
+      actionLabel: editLabel.slice(0, ACTION_LABEL_MAX),
       page,
-      notifyEmail: notifyEmail || user?.email || '',
-      notifyUid: user?.uid || '',
+      siteName: 'Flash ID Super Admin',
+      scope,
+      notifyEmails: emails,
       enabled,
       createdBy: user?.email || '',
       createdAt: agent?.createdAt || new Date().toISOString(),
@@ -52,7 +80,9 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
     if (agent) {
       await deleteFieldAgent(agent.id);
       setAgent(null);
-      setNotifyEmail('');
+      setEditLabel(actionLabel);
+      setScope('');
+      setNotifyEmails([]);
       setEnabled(true);
     }
     setShowPopup(false);
@@ -63,12 +93,12 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setShowPopup(!showPopup); }}
-        className={`p-1 rounded-md transition-all ${
+        className={`p-1.5 rounded-lg transition-all ${
           isActive
-            ? 'text-[#00F5D4] animate-pulse hover:bg-[#00F5D4]/10'
+            ? 'bg-[#00F5D4]/15 text-[#00F5D4]'
             : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'
         }`}
-        title={isActive ? `Field Agent active: ${agent?.notifyEmail}` : 'Set up Field Agent'}
+        title={isActive ? `Field Agent active: ${agent?.notifyEmails?.join(', ')}` : 'Set up Field Agent'}
       >
         <Shield className="h-4 w-4" />
       </button>
@@ -76,7 +106,7 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
       {showPopup && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowPopup(false)} />
-          <div className="absolute right-0 top-8 z-50 w-72 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-0 top-8 z-50 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-[#00F5D4]" />
@@ -87,27 +117,65 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
               </button>
             </div>
 
+            {/* Action Label — editable */}
             <div>
-              <p className="text-xs text-slate-500 mb-1">Action</p>
-              <p className="text-sm font-medium text-slate-900">{actionLabel}</p>
+              <label className="text-xs text-slate-500 mb-1 block">Action <span className="text-slate-300">({editLabel.length}/{ACTION_LABEL_MAX})</span></label>
+              <input
+                type="text"
+                value={editLabel}
+                onChange={(e) => setEditLabel(e.target.value.slice(0, ACTION_LABEL_MAX))}
+                maxLength={ACTION_LABEL_MAX}
+                className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00F5D4] focus:border-[#00F5D4]"
+              />
             </div>
 
+            {/* Page */}
             <div>
               <p className="text-xs text-slate-500 mb-1">Page</p>
               <p className="text-sm text-slate-700 capitalize">{page.replace(/_/g, ' ')}</p>
             </div>
 
+            {/* Scope dropdown */}
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Notify (email)</label>
-              <input
-                type="email"
-                value={notifyEmail}
-                onChange={(e) => setNotifyEmail(e.target.value)}
-                placeholder={auth.currentUser?.email || 'email@example.com'}
-                className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#00F5D4] focus:border-[#00F5D4]"
-              />
+              <label className="text-xs text-slate-500 mb-1 block">Scope</label>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+                className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#00F5D4] focus:border-[#00F5D4]"
+              >
+                <option value="">None</option>
+                {FIELD_AGENT_SCOPES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
 
+            {/* Notify — multi-select from whitelist */}
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Notify</label>
+              <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                {whitelistEmails.length === 0 ? (
+                  <p className="text-xs text-slate-400 p-2">No admins in Access Management</p>
+                ) : (
+                  whitelistEmails.map((email) => (
+                    <label key={email} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notifyEmails.includes(email)}
+                        onChange={() => toggleEmail(email)}
+                        className="w-3.5 h-3.5 rounded accent-[#00F5D4]"
+                      />
+                      <span className="text-xs text-slate-700">{email}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {notifyEmails.length > 0 && (
+                <p className="text-[10px] text-slate-400 mt-1">{notifyEmails.length} recipient{notifyEmails.length > 1 ? 's' : ''}</p>
+              )}
+            </div>
+
+            {/* Enabled */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -118,6 +186,7 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
               <span className="text-sm text-slate-700">Enabled</span>
             </label>
 
+            {/* Actions */}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={handleSave}

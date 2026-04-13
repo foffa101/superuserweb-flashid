@@ -82,10 +82,12 @@ export function useFieldAgentGuard(action: string) {
       action,
       actionLabel: actionLabel || agent.actionLabel,
       page: page || agent.page,
+      siteName: agent.siteName || 'Flash ID Super Admin',
+      scope: agent.scope || '',
       details,
       requestedBy: user?.email || '',
       requestedByUid: user?.uid || '',
-      notifyEmail: agent.notifyEmail,
+      notifyEmails: agent.notifyEmails || [],
     });
 
     setPendingApprovalId(approvalId);
