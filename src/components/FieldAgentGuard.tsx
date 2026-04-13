@@ -16,6 +16,7 @@ export function useFieldAgentGuard(action: string) {
   const [status, setStatus] = useState<ApprovalStatus>('idle');
   const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
+  const [timeoutMs, setTimeoutMs] = useState(120000);
 
   // Listen for approval status changes
   useEffect(() => {
@@ -44,20 +45,23 @@ export function useFieldAgentGuard(action: string) {
         }, 2000);
       }
     });
-    // Timeout after 2 minutes
-    const timeout = setTimeout(() => {
-      if (status === 'waiting') {
-        setStatus('timeout');
-        if (pendingApprovalId) deleteDoc(doc(db, 'admin_approvals', pendingApprovalId));
-        setTimeout(() => {
-          setPendingApprovalId(null);
-          setPendingCallback(null);
-          setStatus('idle');
-        }, 2000);
-      }
-    }, 120000);
-    return () => { unsub(); clearTimeout(timeout); };
-  }, [pendingApprovalId]);
+    // Timeout based on agent config (0 = no timeout)
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        if (status === 'waiting') {
+          setStatus('timeout');
+          if (pendingApprovalId) deleteDoc(doc(db, 'admin_approvals', pendingApprovalId));
+          setTimeout(() => {
+            setPendingApprovalId(null);
+            setPendingCallback(null);
+            setStatus('idle');
+          }, 2000);
+        }
+      }, timeoutMs);
+    }
+    return () => { unsub(); if (timer) clearTimeout(timer); };
+  }, [pendingApprovalId, timeoutMs]);
 
   const executeWithGuard = useCallback(async (
     details: string,
@@ -76,6 +80,8 @@ export function useFieldAgentGuard(action: string) {
     }
 
     // Field agent active — create approval request
+    const agentTimeout = agent.timeoutSeconds || 120;
+    setTimeoutMs(agentTimeout * 1000);
     const user = auth.currentUser;
     const approvalId = await createApprovalRequest({
       type: 'field_agent',
@@ -88,6 +94,7 @@ export function useFieldAgentGuard(action: string) {
       requestedBy: user?.email || '',
       requestedByUid: user?.uid || '',
       notifyEmails: agent.notifyEmails || [],
+      timeoutSeconds: agentTimeout,
     });
 
     setPendingApprovalId(approvalId);

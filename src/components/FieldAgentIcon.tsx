@@ -9,6 +9,33 @@ const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 
 const ACTION_LABEL_MAX = 40;
 
+const FIELD_AGENT_TIMEOUTS = [
+  { value: 60, label: '1 minute' },
+  { value: 300, label: '5 minutes' },
+  { value: 900, label: '15 minutes' },
+  { value: 1800, label: '30 minutes' },
+  { value: 2700, label: '45 minutes' },
+  { value: 3600, label: '1 hour' },
+  { value: 7200, label: '2 hours' },
+  { value: 14400, label: '4 hours' },
+  { value: 28800, label: '8 hours' },
+  { value: 43200, label: '12 hours' },
+  { value: 57600, label: '16 hours' },
+  { value: 72000, label: '20 hours' },
+  { value: 86400, label: '1 day' },
+  { value: 172800, label: '2 days' },
+  { value: 259200, label: '3 days' },
+  { value: 604800, label: '7 days' },
+  { value: 1209600, label: '2 weeks' },
+  { value: 1814400, label: '3 weeks' },
+  { value: 2419200, label: '4 weeks' },
+  { value: 5184000, label: '2 months' },
+  { value: 7776000, label: '3 months' },
+  { value: 15552000, label: '6 months' },
+  { value: 31536000, label: '12 months' },
+  { value: 0, label: 'Does not expire' },
+];
+
 interface FieldAgentIconProps {
   action: string;
   actionLabel: string;
@@ -22,6 +49,7 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
   const [scope, setScope] = useState('');
   const [notifyEmails, setNotifyEmails] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(true);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(120);
   const [saving, setSaving] = useState(false);
   const [whitelistEmails, setWhitelistEmails] = useState<string[]>([]);
 
@@ -40,6 +68,7 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
         setScope(a.scope || '');
         setNotifyEmails(a.notifyEmails || []);
         setEnabled(a.enabled);
+        setTimeoutSeconds(a.timeoutSeconds || 120);
       } else {
         setEditLabel(actionLabel);
       }
@@ -67,6 +96,7 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
       scope,
       notifyEmails: emails,
       enabled,
+      timeoutSeconds,
       createdBy: user?.email || '',
       createdAt: agent?.createdAt || new Date().toISOString(),
     };
@@ -173,6 +203,20 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
               {notifyEmails.length > 0 && (
                 <p className="text-[10px] text-slate-400 mt-1">{notifyEmails.length} recipient{notifyEmails.length > 1 ? 's' : ''}</p>
               )}
+            </div>
+
+            {/* Timeout */}
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Timeout</label>
+              <select
+                value={timeoutSeconds}
+                onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
+                className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#00F5D4] focus:border-[#00F5D4]"
+              >
+                {FIELD_AGENT_TIMEOUTS.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Enabled */}

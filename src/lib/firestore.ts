@@ -9,6 +9,7 @@ import {
   deleteDoc,
 
   query,
+  where,
   orderBy,
   limit,
 } from 'firebase/firestore';
@@ -325,6 +326,7 @@ export interface FieldAgent {
   enabled: boolean;
   createdBy: string;
   createdAt: string;
+  timeoutSeconds: number;
 }
 
 export async function getFieldAgents(): Promise<FieldAgent[]> {
@@ -377,13 +379,35 @@ export async function createApprovalRequest(data: {
   requestedBy: string;
   requestedByUid: string;
   notifyEmails: string[];
+  timeoutSeconds?: number;
 }): Promise<string> {
+  const timeout = data.timeoutSeconds || 120;
+
+  // Check for existing pending approval for same action + user
+  const existing = await getDocs(
+    query(
+      collection(db, 'admin_approvals'),
+      where('action', '==', data.action),
+      where('requestedByUid', '==', data.requestedByUid),
+      where('status', '==', 'pending'),
+    ),
+  );
+
+  // If a non-expired pending approval exists, reuse it
+  const now = new Date().toISOString();
+  for (const d of existing.docs) {
+    const expiresAt = d.data().expiresAt as string | null;
+    if (!expiresAt || expiresAt > now) return d.id;
+    // Expired — clean it up
+    await deleteDoc(d.ref);
+  }
+
   const approvalId = `approval_${Date.now()}`;
   await setDoc(doc(db, 'admin_approvals', approvalId), {
     ...data,
     status: 'pending',
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 120 * 1000).toISOString(),
+    expiresAt: timeout === 0 ? null : new Date(Date.now() + timeout * 1000).toISOString(),
   });
   return approvalId;
 }

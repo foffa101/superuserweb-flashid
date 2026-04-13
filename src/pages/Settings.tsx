@@ -568,6 +568,9 @@ export default function Settings({ user }: SettingsProps) {
                         Notifies: {agent.notifyEmails.join(', ')}
                       </p>
                     )}
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Timeout: {agent.timeoutSeconds === 0 ? 'Does not expire' : agent.timeoutSeconds < 60 ? `${agent.timeoutSeconds}s` : agent.timeoutSeconds < 3600 ? `${Math.floor(agent.timeoutSeconds / 60)}m` : agent.timeoutSeconds < 86400 ? `${Math.floor(agent.timeoutSeconds / 3600)}h` : `${Math.floor(agent.timeoutSeconds / 86400)}d`}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
