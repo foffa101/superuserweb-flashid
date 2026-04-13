@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
-import { mockBannedIPs, type BannedIP } from '../lib/api';
+import { type BannedIP } from '../lib/api';
+import {
+  getBannedIPs,
+  addBannedIP,
+  removeBannedIP,
+  getSecuritySettings,
+  updateSecuritySettings,
+  seedInitialData,
+} from '../lib/firestore';
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-US', {
@@ -9,6 +17,8 @@ function formatDateTime(iso: string): string {
 }
 
 export default function Security() {
+  const [, setLoading] = useState(true);
+
   // Rate limiting
   const [globalRateLimit, setGlobalRateLimit] = useState(30);
   const callbackLimit = Math.round(globalRateLimit / 3);
@@ -19,7 +29,7 @@ export default function Security() {
   const [banAction, setBanAction] = useState<'block' | 'throttle'>('block');
 
   // Banned IPs
-  const [bannedIPs, setBannedIPs] = useState<BannedIP[]>(mockBannedIPs);
+  const [bannedIPs, setBannedIPs] = useState<BannedIP[]>([]);
   const [showBanForm, setShowBanForm] = useState(false);
   const [newBanIP, setNewBanIP] = useState('');
   const [newBanReason, setNewBanReason] = useState('');
@@ -38,21 +48,67 @@ export default function Security() {
 
   // Signing secret
   const [rotationDays, setRotationDays] = useState(90);
-  const lastRotated = '2026-03-15T10:00:00Z';
+  const [lastRotated, setLastRotated] = useState('2026-03-15T10:00:00Z');
 
   // Save feedback
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  // Load data from Firestore
+  useEffect(() => {
+    async function load() {
+      await seedInitialData();
+      const [bans, settings] = await Promise.all([getBannedIPs(), getSecuritySettings()]);
+      setBannedIPs(bans);
+      setGlobalRateLimit(settings.globalRateLimit);
+      setBanThreshold(settings.banThreshold);
+      setBanDuration(settings.banDuration);
+      setBanAction(settings.banAction);
+      setGeoEnabled(settings.geoEnabled);
+      setGeoCacheDuration(settings.geoCacheDuration);
+      setDefaultSessionTimeout(settings.defaultSessionTimeout);
+      setMaxSessionTimeout(settings.maxSessionTimeout);
+      setMinPollInterval(settings.minPollInterval);
+      setDefaultUserPolicy(settings.defaultUserPolicy);
+      setRotationDays(settings.rotationDays);
+      setLastRotated(settings.lastRotated);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await updateSecuritySettings({
+        globalRateLimit,
+        banThreshold,
+        banDuration,
+        banAction,
+        geoEnabled,
+        geoCacheDuration,
+        defaultSessionTimeout,
+        maxSessionTimeout,
+        minPollInterval,
+        defaultUserPolicy,
+        rotationDays,
+        lastRotated,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error('Failed to save security settings:', e);
+    }
   };
 
-  const handleUnban = (ip: string) => {
+  const handleUnban = async (ip: string) => {
     setBannedIPs((prev) => prev.filter((b) => b.ip !== ip));
+    try {
+      await removeBannedIP(ip);
+    } catch (e) {
+      console.error('Failed to remove ban:', e);
+    }
   };
 
-  const handleAddBan = () => {
+  const handleAddBan = async () => {
     if (!newBanIP.trim()) return;
     const newBan: BannedIP = {
       ip: newBanIP.trim(),
@@ -68,6 +124,11 @@ export default function Security() {
     setNewBanTenant('Global');
     setNewBanPermanent(false);
     setShowBanForm(false);
+    try {
+      await addBannedIP(newBan);
+    } catch (e) {
+      console.error('Failed to add ban:', e);
+    }
   };
 
   return (

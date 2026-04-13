@@ -3,12 +3,15 @@ import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
   ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { app } from '../lib/firebase';
-
-const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
-  mockTenants,
+  db,
+  getTenants as fetchTenants,
+  createTenant,
+  updateTenant as firestoreUpdateTenant,
+  seedInitialData,
+} from '../lib/firestore';
+import {
   generateLicenseKey,
   generateApiKeyHalf,
   type Tenant,
@@ -60,7 +63,8 @@ type View = 'list' | 'detail' | 'form';
 
 export default function Tenants() {
   const { filter: globalFilter } = useGlobalFilter();
-  const [tenants, setTenants] = useState<Tenant[]>([...mockTenants]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [, setLoading] = useState(true);
   const [view, setView] = useState<View>('list');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | TenantStatus>('all');
@@ -69,6 +73,17 @@ export default function Tenants() {
   const [newSite, setNewSite] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
+
+  // Load tenants from Firestore
+  useEffect(() => {
+    async function load() {
+      await seedInitialData();
+      const data = await fetchTenants();
+      setTenants(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   // Load admin whitelist from Firestore
   useEffect(() => {
@@ -115,9 +130,14 @@ export default function Tenants() {
     setView('detail');
   };
 
-  const toggleStatus = (t: Tenant) => {
+  const toggleStatus = async (t: Tenant) => {
     const newStatus: TenantStatus = t.status === 'active' ? 'suspended' : 'active';
     setTenants((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: newStatus } : x)));
+    try {
+      await firestoreUpdateTenant(t.id, { status: newStatus });
+    } catch (e) {
+      console.error('Failed to update tenant status:', e);
+    }
   };
 
   const handleTypeChange = (type: TenantType) => {
@@ -152,10 +172,15 @@ export default function Tenants() {
     });
   };
 
-  const saveForm = () => {
+  const saveForm = async () => {
     if (!formData.name || !formData.email) return;
     if (isEditing && formData.id) {
       setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
+      try {
+        await firestoreUpdateTenant(formData.id, formData);
+      } catch (e) {
+        console.error('Failed to update tenant:', e);
+      }
     } else {
       const newTenant: Tenant = {
         ...formData,
@@ -163,6 +188,11 @@ export default function Tenants() {
         createdAt: new Date().toISOString(),
       } as Tenant;
       setTenants((prev) => [...prev, newTenant]);
+      try {
+        await createTenant(newTenant);
+      } catch (e) {
+        console.error('Failed to create tenant:', e);
+      }
     }
     setView('list');
     setFormData({});

@@ -6,5 +6,11 @@
     "rewrites": [
       { "source": "**", "destination": "/index.html" }
     ]
-  }
+  },
+  "firestore": [
+    {
+      "database": "ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c",
+      "rules": "firestore.rules"
+    }
+  ]
 }

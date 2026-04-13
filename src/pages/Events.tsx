@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Download, Trash2, ScrollText } from 'lucide-react';
 import EventRow from '../components/EventRow';
-import { mockEvents, mockTenants, type EventType, type EventStatus, type PlatformEvent } from '../lib/api';
+import { type EventType, type EventStatus, type PlatformEvent, type Tenant } from '../lib/api';
+import { getEvents, getTenants, deleteAllEvents, seedInitialData } from '../lib/firestore';
 import { useGlobalFilter } from '../lib/FilterContext';
 
 const PAGE_SIZE = 10;
@@ -16,7 +17,9 @@ const statuses: EventStatus[] = ['success', 'warning', 'error', 'info'];
 
 export default function Events() {
   const { filter: globalFilter } = useGlobalFilter();
-  const [events, setEvents] = useState<PlatformEvent[]>(mockEvents);
+  const [events, setEvents] = useState<PlatformEvent[]>([]);
+  const [allTenants, setAllTenants] = useState<Tenant[]>([]);
+  const [, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [tenantFilter, setTenantFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -24,18 +27,29 @@ export default function Events() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    async function load() {
+      await seedInitialData();
+      const [evts, tenants] = await Promise.all([getEvents(), getTenants()]);
+      setEvents(evts);
+      setAllTenants(tenants);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
   // Build tenant type lookup
   const tenantTypeMap = useMemo(() => {
     const map: Record<string, string> = {};
-    mockTenants.forEach((t) => { map[t.id] = t.type; });
+    allTenants.forEach((t) => { map[t.id] = t.type; });
     return map;
-  }, []);
+  }, [allTenants]);
 
   // Tenants visible under current global filter (for tenant dropdown)
   const visibleTenants = useMemo(() => {
-    if (globalFilter === 'all') return mockTenants;
-    return mockTenants.filter((t) => t.type === globalFilter);
-  }, [globalFilter]);
+    if (globalFilter === 'all') return allTenants;
+    return allTenants.filter((t) => t.type === globalFilter);
+  }, [globalFilter, allTenants]);
 
   const filtered = useMemo(() => {
     let result = events;
@@ -69,10 +83,15 @@ export default function Events() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const handleClearLog = () => {
+  const handleClearLog = async () => {
     if (window.confirm('Are you sure you want to clear the entire event log? This action cannot be undone.')) {
       setEvents([]);
       setPage(1);
+      try {
+        await deleteAllEvents();
+      } catch (e) {
+        console.error('Failed to clear event log:', e);
+      }
     }
   };
 

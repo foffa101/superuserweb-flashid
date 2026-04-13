@@ -76,7 +76,54 @@ export function generateApiKeyHalf(): string {
   return 'fid_' + Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-// ─── Mock Tenants ───
+// ─── Banned IPs ───
+
+export interface BannedIP {
+  ip: string;
+  reason: string;
+  tenantId: string;
+  tenantName: string;
+  bannedAt: string;
+  expiresAt: string | null; // null = permanent
+}
+
+// ─── Platform Events ───
+
+export type EventType =
+  | 'session_created'
+  | 'session_verified'
+  | 'session_expired'
+  | 'session_failed'
+  | 'rate_limit_hit'
+  | 'ip_banned'
+  | 'ip_unbanned'
+  | 'api_key_rotated'
+  | 'tenant_suspended'
+  | 'tenant_activated'
+  | 'settings_updated'
+  | 'login';
+
+export type EventStatus = 'success' | 'warning' | 'error' | 'info';
+
+export interface PlatformEvent {
+  id: string;
+  timestamp: string;
+  tenantId: string;
+  tenantName: string;
+  eventType: EventType;
+  ip: string;
+  location: string;
+  status: EventStatus;
+  details: string;
+}
+
+// ─── Plan display helper ───
+
+export function displayPlan(plan: string): string {
+  return plan.replace(/^(WP|API)\s*-\s*/, '');
+}
+
+// ─── Mock data (used only for seeding Firestore on first load) ───
 
 export const mockTenants: Tenant[] = [
   {
@@ -237,8 +284,6 @@ export const mockTenants: Tenant[] = [
   },
 ];
 
-// ─── Mock Invoices ───
-
 export const mockInvoices: Invoice[] = [
   { id: 'inv-001', tenantId: 't1', date: '2026-04-01', plan: 'WP - Standard', usage: 1, amount: 49, status: 'paid' },
   { id: 'inv-002', tenantId: 't1', date: '2026-03-01', plan: 'WP - Standard', usage: 1, amount: 49, status: 'paid' },
@@ -259,64 +304,6 @@ export const mockInvoices: Invoice[] = [
   { id: 'inv-017', tenantId: 't8', date: '2025-11-01', plan: 'WP - Standard', usage: 1, amount: 49, status: 'paid' },
   { id: 'inv-018', tenantId: 't8', date: '2025-10-01', plan: 'WP - Standard', usage: 1, amount: 49, status: 'paid' },
 ];
-
-// ─── API functions ───
-
-export function getTenants(): Tenant[] {
-  return mockTenants;
-}
-
-export function getTenant(id: string): Tenant | undefined {
-  return mockTenants.find((t) => t.id === id);
-}
-
-export function updateTenant(id: string, data: Partial<Tenant>): Tenant | undefined {
-  const idx = mockTenants.findIndex((t) => t.id === id);
-  if (idx === -1) return undefined;
-  mockTenants[idx] = { ...mockTenants[idx], ...data };
-  return mockTenants[idx];
-}
-
-export function getBillingSummary(): BillingSummary {
-  const activeTenants = mockTenants.filter((t) => t.status === 'active');
-  const wpLicenses = activeTenants.filter((t) => t.type === 'wp' && t.licenseStatus === 'active').length;
-  const apiCalls = activeTenants
-    .filter((t) => t.type === 'api')
-    .reduce((sum, t) => sum + (t.callsThisMonth || 0), 0);
-
-  // Estimate revenue from current month invoices
-  const currentMonthInvoices = mockInvoices.filter((inv) => inv.date.startsWith('2026-04'));
-  const revenue = currentMonthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-
-  return {
-    totalActiveTenants: activeTenants.length,
-    totalWPLicenses: wpLicenses,
-    totalAPICallsThisMonth: apiCalls,
-    estimatedRevenueThisMonth: revenue,
-  };
-}
-
-export function getInvoices(tenantId?: string): Invoice[] {
-  if (tenantId) return mockInvoices.filter((inv) => inv.tenantId === tenantId);
-  return mockInvoices;
-}
-
-export function markInvoicePaid(id: string): Invoice | undefined {
-  const inv = mockInvoices.find((i) => i.id === id);
-  if (inv) inv.status = 'paid';
-  return inv;
-}
-
-// ─── Banned IPs ───
-
-export interface BannedIP {
-  ip: string;
-  reason: string;
-  tenantId: string;
-  tenantName: string;
-  bannedAt: string;
-  expiresAt: string | null; // null = permanent
-}
 
 export const mockBannedIPs: BannedIP[] = [
   {
@@ -361,36 +348,6 @@ export const mockBannedIPs: BannedIP[] = [
   },
 ];
 
-// ─── Platform Events ───
-
-export type EventType =
-  | 'session_created'
-  | 'session_verified'
-  | 'session_expired'
-  | 'session_failed'
-  | 'rate_limit_hit'
-  | 'ip_banned'
-  | 'ip_unbanned'
-  | 'api_key_rotated'
-  | 'tenant_suspended'
-  | 'tenant_activated'
-  | 'settings_updated'
-  | 'login';
-
-export type EventStatus = 'success' | 'warning' | 'error' | 'info';
-
-export interface PlatformEvent {
-  id: string;
-  timestamp: string;
-  tenantId: string;
-  tenantName: string;
-  eventType: EventType;
-  ip: string;
-  location: string;
-  status: EventStatus;
-  details: string;
-}
-
 export const mockEvents: PlatformEvent[] = [
   { id: 'e1', timestamp: '2026-04-09T08:14:02Z', tenantId: 't5', tenantName: 'CloudBank Finance', eventType: 'session_verified', ip: '44.192.55.10', location: 'New York, US', status: 'success', details: 'Session sid_9f8e7d verified successfully' },
   { id: 'e2', timestamp: '2026-04-09T08:12:44Z', tenantId: 't1', tenantName: 'Acme Corp', eventType: 'session_created', ip: '52.14.88.201', location: 'Columbus, US', status: 'info', details: 'New session sid_a1b2c3 initiated' },
@@ -424,10 +381,8 @@ export const mockEvents: PlatformEvent[] = [
   { id: 'e30', timestamp: '2026-04-07T08:12:00Z', tenantId: 't3', tenantName: 'TechStartup.dev', eventType: 'session_created', ip: '91.108.12.34', location: 'Berlin, DE', status: 'info', details: 'New session sid_c5d6e7 initiated' },
 ];
 
-// ─── Dashboard stats ───
-
 export const platformStats = {
-  totalSites: mockTenants.length,
+  totalSites: 8,
   totalSessionsToday: 1847,
   totalActiveUsers: 312,
   platformSuccessRate: 96.2,

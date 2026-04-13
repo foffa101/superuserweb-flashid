@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DollarSign, Building2, Phone, CreditCard, FileText, Download, Send,
   ArrowLeft, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import {
-  mockTenants,
-  mockInvoices,
-  markInvoicePaid,
   type Tenant,
   type Invoice,
   type InvoiceStatus,
 } from '../lib/api';
+import {
+  getTenants,
+  getInvoices,
+  updateInvoice,
+  seedInitialData,
+} from '../lib/firestore';
 import { useGlobalFilter } from '../lib/FilterContext';
 
 function formatDate(iso: string): string {
@@ -43,18 +46,6 @@ function getOverage(t: Tenant): number {
   return Math.max(0, (t.callsUsed || 0) - t.callsIncluded);
 }
 
-function getAmountDue(t: Tenant): number {
-  const currentInvoices = mockInvoices.filter((inv) => inv.tenantId === t.id && inv.date.startsWith('2026-04'));
-  if (currentInvoices.length > 0) return currentInvoices[0].amount;
-  return 0;
-}
-
-function getInvoiceStatus(t: Tenant): InvoiceStatus | null {
-  const currentInvoices = mockInvoices.filter((inv) => inv.tenantId === t.id && inv.date.startsWith('2026-04'));
-  if (currentInvoices.length > 0) return currentInvoices[0].status;
-  return null;
-}
-
 type View = 'overview' | 'detail';
 
 export default function Billing() {
@@ -65,19 +56,44 @@ export default function Billing() {
   const [filterUnpaid, setFilterUnpaid] = useState(false);
   const [sortBy, setSortBy] = useState<'amount' | 'usage' | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [invoices, setInvoices] = useState<Invoice[]>([...mockInvoices]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [allTenants, setAllTenants] = useState<Tenant[]>([]);
+  const [, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      await seedInitialData();
+      const [tenantData, invoiceData] = await Promise.all([getTenants(), getInvoices()]);
+      setAllTenants(tenantData);
+      setInvoices(invoiceData);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  function getAmountDue(t: Tenant): number {
+    const currentInvoices = invoices.filter((inv) => inv.tenantId === t.id && inv.date.startsWith('2026-04'));
+    if (currentInvoices.length > 0) return currentInvoices[0].amount;
+    return 0;
+  }
+
+  function getInvoiceStatus(t: Tenant): InvoiceStatus | null {
+    const currentInvoices = invoices.filter((inv) => inv.tenantId === t.id && inv.date.startsWith('2026-04'));
+    if (currentInvoices.length > 0) return currentInvoices[0].status;
+    return null;
+  }
 
   // Compute billing summary based on global filter
   const summary = (() => {
-    const base = globalFilter === 'all' ? mockTenants : mockTenants.filter((t) => t.type === globalFilter);
+    const base = globalFilter === 'all' ? allTenants : allTenants.filter((t) => t.type === globalFilter);
     const activeTenants = base.filter((t) => t.status === 'active');
     const wpLicenses = activeTenants.filter((t) => t.type === 'wp' && t.licenseStatus === 'active').length;
     const apiCalls = activeTenants
       .filter((t) => t.type === 'api')
       .reduce((sum, t) => sum + (t.callsThisMonth || 0), 0);
     const tenantIds = new Set(base.map((t) => t.id));
-    const currentMonthInvoices = mockInvoices.filter((inv) => inv.date.startsWith('2026-04') && tenantIds.has(inv.tenantId));
+    const currentMonthInvoices = invoices.filter((inv) => inv.date.startsWith('2026-04') && tenantIds.has(inv.tenantId));
     const revenue = currentMonthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     return {
       totalActiveTenants: activeTenants.length,
@@ -87,7 +103,7 @@ export default function Billing() {
     };
   })();
 
-  const tenants = [...mockTenants];
+  const tenants = [...allTenants];
   let filtered = tenants.filter((t) => {
     if (globalFilter !== 'all' && t.type !== globalFilter) return false;
     if (filterOverage && getOverage(t) === 0) return false;
@@ -121,9 +137,13 @@ export default function Billing() {
     setView('detail');
   };
 
-  const handleMarkPaid = (invId: string) => {
+  const handleMarkPaid = async (invId: string) => {
     setInvoices((prev) => prev.map((inv) => inv.id === invId ? { ...inv, status: 'paid' as InvoiceStatus } : inv));
-    markInvoicePaid(invId);
+    try {
+      await updateInvoice(invId, { status: 'paid' });
+    } catch (e) {
+      console.error('Failed to mark invoice as paid:', e);
+    }
   };
 
   // ─── Tenant billing detail ───

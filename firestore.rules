@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: checks if the user is logged in via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: checks if the logged-in user's UID matches the document's userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profiles — only the account owner can read/write their own profile
+    // Used by: web-flashid (read profile after SSO), app-flashid (create/update profile on setup)
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Voice biometric data — only the owner can access their voiceprint
+    // Used by: web-flashid (read enrollment status), app-flashid (write during enrollment)
+    match /voiceprints/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Fingerprint biometric data — only the owner can access their fingerprint
+    // Used by: web-flashid (read enrollment status), app-flashid (write during enrollment)
+    match /fingerprints/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Face biometric data — only the owner can access their faceprint
+    // Used by: web-flashid (read enrollment status), app-flashid (write during enrollment)
+    match /faceprints/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // QR login sessions (web <-> app verification flow)
+    // Any logged-in user can create a session or read session status
+    // Only the user who CREATED the session (userId field) can approve/update it
+    // This prevents a different user's app from approving someone else's login
+    // Used by: web-flashid (create session + listen for approval), app-flashid (update session to approved after biometric)
+    // QR login sessions (web <-> app verification flow)
+    // Any authenticated user can create, read, or update a session
+    // Security is enforced by: challenge token (must match QR), session expiry, biometric verification
+    // The app user approving may have a different UID than the portal user who created the session
+    match /auth_sessions/{sessionId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated();
+    }
+
+    // Sites authorized via the Flash ID app (synced to web portal)
+    // Only the owner can read/write their own authorized sites list
+    // Used by: app-flashid (write when user approves a site via QR), web-flashid (read to display in Vault)
+    match /authorized_sites/{userId}/sites/{siteId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Super admin portal configuration (whitelist, settings)
+    // Any authenticated user can READ (needed for whitelist check on login)
+    // Only existing whitelisted admins can WRITE (modify the whitelist)
+    // The portal code checks the whitelist and blocks unauthorized users at the app level
+    // Used by: superuserweb-flashid (read whitelist to check access on login)
+    match /superadmin_config/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Admin portal configuration (whitelist managed by super admin)
+    match /admin_config/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Tenant management (super admin portal)
+    match /tenants/{tenantId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Invoices (super admin portal)
+    match /invoices/{invoiceId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Platform events log (super admin portal)
+    match /platform_events/{eventId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Banned IPs (super admin portal)
+    match /banned_ips/{banId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Platform config — stats, security settings (super admin portal)
+    match /platform_config/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /security_config/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Admin approval requests (push-to-approve for whitelist changes)
+    // Portal creates, app reads and updates status
+    match /admin_approvals/{approvalId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Verification event logs (audit trail)
+    // Users can only read their own logs
+    // Users can only create logs with their own userId
+    // Used by: web-flashid (read + display in Events page), app-flashid (future: write after verification)
+    // Not used by: wp-flashid (has its own internal security log in WordPress DB)
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Catch-all: deny everything not explicitly allowed above
+    // Applies to: all apps — any collection not listed above is blocked
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

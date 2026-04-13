@@ -1,47 +1,80 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Building2, Activity, Users, TrendingUp, HeartPulse, LayoutDashboard } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import EventRow from '../components/EventRow';
-import { platformStats, mockEvents, mockTenants } from '../lib/api';
+import type { Tenant, PlatformEvent } from '../lib/api';
+import {
+  getTenants,
+  getEvents,
+  getStats,
+  seedInitialData,
+  type PlatformStats,
+} from '../lib/firestore';
 import { useGlobalFilter } from '../lib/FilterContext';
 
 export default function Dashboard() {
   const { filter } = useGlobalFilter();
+  const [allTenants, setAllTenants] = useState<Tenant[]>([]);
+  const [allEvents, setAllEvents] = useState<PlatformEvent[]>([]);
+  const [baseStats, setBaseStats] = useState<PlatformStats>({
+    totalSites: 0,
+    totalSessionsToday: 0,
+    totalActiveUsers: 0,
+    platformSuccessRate: 0,
+    systemHealth: 'operational',
+  });
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      await seedInitialData();
+      const [tenants, events, stats] = await Promise.all([
+        getTenants(),
+        getEvents(),
+        getStats(),
+      ]);
+      setAllTenants(tenants);
+      setAllEvents(events);
+      setBaseStats({ ...stats, totalSites: tenants.length });
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const tenantTypeMap = useMemo(() => {
     const map: Record<string, string> = {};
-    mockTenants.forEach((t) => { map[t.id] = t.type; });
+    allTenants.forEach((t) => { map[t.id] = t.type; });
     return map;
-  }, []);
+  }, [allTenants]);
 
   const filteredTenants = useMemo(() => {
-    if (filter === 'all') return mockTenants;
-    return mockTenants.filter((t) => t.type === filter);
-  }, [filter]);
+    if (filter === 'all') return allTenants;
+    return allTenants.filter((t) => t.type === filter);
+  }, [filter, allTenants]);
 
   const filteredEvents = useMemo(() => {
-    if (filter === 'all') return mockEvents;
-    return mockEvents.filter((e) => tenantTypeMap[e.tenantId] === filter);
-  }, [filter, tenantTypeMap]);
+    if (filter === 'all') return allEvents;
+    return allEvents.filter((e) => tenantTypeMap[e.tenantId] === filter);
+  }, [filter, tenantTypeMap, allEvents]);
 
   const recentEvents = filteredEvents.slice(0, 10);
 
   const stats = useMemo(() => {
-    if (filter === 'all') return platformStats;
+    if (filter === 'all') return baseStats;
     return {
       totalSites: filteredTenants.length,
       totalSessionsToday: filter === 'wp'
-        ? Math.round(platformStats.totalSessionsToday * 0.3)
-        : Math.round(platformStats.totalSessionsToday * 0.7),
+        ? Math.round(baseStats.totalSessionsToday * 0.3)
+        : Math.round(baseStats.totalSessionsToday * 0.7),
       totalActiveUsers: filter === 'wp'
-        ? Math.round(platformStats.totalActiveUsers * 0.25)
-        : Math.round(platformStats.totalActiveUsers * 0.75),
+        ? Math.round(baseStats.totalActiveUsers * 0.25)
+        : Math.round(baseStats.totalActiveUsers * 0.75),
       platformSuccessRate: filteredTenants.length > 0
         ? Math.round((filteredTenants.reduce((s, t) => s + t.successRate, 0) / filteredTenants.length) * 10) / 10
         : 0,
-      systemHealth: platformStats.systemHealth,
+      systemHealth: baseStats.systemHealth,
     };
-  }, [filter, filteredTenants]);
+  }, [filter, filteredTenants, baseStats]);
 
   return (
     <div className="space-y-8">
