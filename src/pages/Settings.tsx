@@ -425,7 +425,9 @@ export default function Settings({ user }: SettingsProps) {
             </button>
           </div>
 
-          {/* Category toggles with collapsible content */}
+          {/* Category toggles — collapse when None is active */}
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${!Object.values(enabledMethods).some(v => v) ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
+          <div className="divide-y divide-slate-100">
           {([
             { catKey: 'otp', icon: Hash, label: 'OTP', desc: 'One-time password challenges', color: 'text-blue-500', bg: 'bg-blue-50', methods: CHALLENGE_METHODS.otp },
             { catKey: 'visual', icon: Eye, label: 'Visual Challenge', desc: 'Visual matching challenges', color: 'text-amber-500', bg: 'bg-amber-50', methods: CHALLENGE_METHODS.visual },
@@ -470,6 +472,8 @@ export default function Settings({ user }: SettingsProps) {
               </div>
             );
           })}
+          </div>
+          </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which verification methods are required. "None" skips challenge verification entirely and "Random" selects one at random.</p>
       </section>
