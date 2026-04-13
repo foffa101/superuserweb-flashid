@@ -83,6 +83,7 @@ export default function Settings({ user }: SettingsProps) {
   const handleBiometricNone = (on: boolean) => {
     setBiometricNone(on);
     if (on) { setRequireFace(false); setRequireFingerprint(false); setRequireVoice(false); setBiometricRandom(false); }
+    else { setBiometricRandom(true); }
   };
   const handleBiometricRandom = (on: boolean) => {
     setBiometricRandom(on);
@@ -216,6 +217,11 @@ export default function Settings({ user }: SettingsProps) {
   });
   const selectMethod = (key: string) => setEnabledMethods({ [key]: true });
   const clearMethod = () => setEnabledMethods({});
+  const toggleChallengeNone = () => {
+    const isNone = !Object.values(enabledMethods).some(v => v);
+    if (isNone) { setEnabledMethods({ random: true }); }
+    else { setEnabledMethods({}); }
+  };
 
   const [saved, setSaved] = useState(false);
 
@@ -406,7 +412,7 @@ export default function Settings({ user }: SettingsProps) {
                 <p className="text-xs text-slate-400">Only biometric verification is used</p>
               </div>
             </div>
-            <button type="button" onClick={clearMethod}>
+            <button type="button" onClick={toggleChallengeNone}>
               {!Object.values(enabledMethods).some(v => v) ? <ToggleRight className="h-8 w-8 text-red-600" /> : <ToggleLeft className="h-8 w-8 text-slate-300" />}
             </button>
           </div>
