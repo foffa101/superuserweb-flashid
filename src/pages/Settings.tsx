@@ -277,109 +277,6 @@ export default function Settings({ user }: SettingsProps) {
         <p className="text-xs text-slate-400">Profile info is managed via Google SSO and is read-only here.</p>
       </section>
 
-      {/* Access Management */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Access Management</h2>
-        <p className="text-xs text-slate-400 mb-4">Manage who can access the Super Admin portal. Changes take effect immediately.</p>
-
-        {/* Add email */}
-        {approvalStatus === 'idle' && (
-          <div className="flex gap-2 mb-4">
-            <div className="flex-1 relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') addEmail(); }}
-                placeholder="email@example.com"
-                className="w-full border border-slate-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-            <button
-              onClick={addEmail}
-              disabled={whitelistSaving || !newEmail.trim().includes('@')}
-              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add
-            </button>
-            <FieldAgentIcon action="add_admin_email" actionLabel="Add Admin Email" page="settings" />
-          </div>
-        )}
-
-        {/* Approval waiting state */}
-        {approvalStatus === 'waiting' && (
-          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
-            <div className="flex justify-center mb-2">
-              <div className="h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-            <p className="text-sm font-semibold text-amber-800">Waiting for approval</p>
-            <p className="text-xs text-amber-600 mt-1">
-              Approve adding <span className="font-bold">{newEmail}</span> on your Flash ID app (Agents tab)
-            </p>
-            <button
-              onClick={() => {
-                if (pendingApproval) deleteDoc(doc(db, 'admin_approvals', pendingApproval));
-                setPendingApproval(null);
-                setApprovalStatus('idle');
-              }}
-              className="mt-3 text-xs text-amber-500 hover:text-amber-700 font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
-        {approvalStatus === 'approved' && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
-            <p className="text-sm font-semibold text-green-800">Approved — email added</p>
-          </div>
-        )}
-
-        {approvalStatus === 'denied' && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
-            <p className="text-sm font-semibold text-red-800">Denied — email not added</p>
-          </div>
-        )}
-
-        {/* Email list */}
-        {whitelistLoading ? (
-          <p className="text-sm text-slate-400">Loading...</p>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {whitelistEmails.map((email) => {
-              const isCurrentUser = email.toLowerCase() === user.email?.toLowerCase();
-              return (
-                <div key={email} className="flex items-center justify-between py-2.5">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-slate-100">
-                      <Users className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{email}</p>
-                      {isCurrentUser && <p className="text-[10px] text-red-500 font-bold uppercase">You</p>}
-                    </div>
-                  </div>
-                  {!isCurrentUser && (
-                    <button
-                      onClick={() => removeEmail(email)}
-                      disabled={whitelistSaving}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <p className="text-xs text-slate-400 mt-3">
-          {whitelistEmails.length} authorized {whitelistEmails.length === 1 ? 'user' : 'users'}. You cannot remove yourself.
-        </p>
-      </section>
-
       {/* Theme Settings */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Theme Settings</h2>
@@ -613,6 +510,109 @@ export default function Settings({ user }: SettingsProps) {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Access Management */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Access Management</h2>
+        <p className="text-xs text-slate-400 mb-4">Manage who can access the Super Admin portal. Changes take effect immediately.</p>
+
+        {/* Add email */}
+        {approvalStatus === 'idle' && (
+          <div className="flex gap-2 mb-4">
+            <div className="flex-1 relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') addEmail(); }}
+                placeholder="email@example.com"
+                className="w-full border border-slate-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+            <button
+              onClick={addEmail}
+              disabled={whitelistSaving || !newEmail.trim().includes('@')}
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add
+            </button>
+            <FieldAgentIcon action="add_admin_email" actionLabel="Add Admin Email" page="settings" />
+          </div>
+        )}
+
+        {/* Approval waiting state */}
+        {approvalStatus === 'waiting' && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+            <div className="flex justify-center mb-2">
+              <div className="h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm font-semibold text-amber-800">Waiting for approval</p>
+            <p className="text-xs text-amber-600 mt-1">
+              Approve adding <span className="font-bold">{newEmail}</span> on your Flash ID app (Agents tab)
+            </p>
+            <button
+              onClick={() => {
+                if (pendingApproval) deleteDoc(doc(db, 'admin_approvals', pendingApproval));
+                setPendingApproval(null);
+                setApprovalStatus('idle');
+              }}
+              className="mt-3 text-xs text-amber-500 hover:text-amber-700 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {approvalStatus === 'approved' && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+            <p className="text-sm font-semibold text-green-800">Approved — email added</p>
+          </div>
+        )}
+
+        {approvalStatus === 'denied' && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p className="text-sm font-semibold text-red-800">Denied — email not added</p>
+          </div>
+        )}
+
+        {/* Email list */}
+        {whitelistLoading ? (
+          <p className="text-sm text-slate-400">Loading...</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {whitelistEmails.map((email) => {
+              const isCurrentUser = email.toLowerCase() === user.email?.toLowerCase();
+              return (
+                <div key={email} className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-slate-100">
+                      <Users className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{email}</p>
+                      {isCurrentUser && <p className="text-[10px] text-red-500 font-bold uppercase">You</p>}
+                    </div>
+                  </div>
+                  {!isCurrentUser && (
+                    <button
+                      onClick={() => removeEmail(email)}
+                      disabled={whitelistSaving}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-slate-400 mt-3">
+          {whitelistEmails.length} authorized {whitelistEmails.length === 1 ? 'user' : 'users'}. You cannot remove yourself.
+        </p>
       </section>
 
       {/* Save */}
