@@ -75,7 +75,10 @@ export default function Settings({ user }: SettingsProps) {
   const [requireFingerprint, setRequireFingerprint] = useState(() => localStorage.getItem('superadmin-require-fingerprint') === '1');
   const [requireVoice, setRequireVoice] = useState(() => localStorage.getItem('superadmin-require-voice') === '1');
   const [biometricNone, setBiometricNone] = useState(() => localStorage.getItem('superadmin-biometric-none') === '1');
-  const [biometricRandom, setBiometricRandom] = useState(() => localStorage.getItem('superadmin-biometric-random') === '1');
+  const [biometricRandom, setBiometricRandom] = useState(() => {
+    const stored = localStorage.getItem('superadmin-biometric-random');
+    return stored === null ? true : stored === '1';
+  });
 
   const handleBiometricNone = (on: boolean) => {
     setBiometricNone(on);
@@ -451,26 +454,44 @@ export default function Settings({ user }: SettingsProps) {
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Biometric Verification</h2>
         <div className="divide-y divide-slate-100">
-          {[
-            { icon: ScanFace, label: 'Face Recognition', desc: 'Require face verification for login', color: 'text-blue-500', bg: 'bg-blue-50', value: requireFace, toggle: () => handleBiometricToggle(setRequireFace, requireFace) },
-            { icon: Fingerprint, label: 'Fingerprint', desc: 'Require fingerprint verification for login', color: 'text-green-500', bg: 'bg-green-50', value: requireFingerprint, toggle: () => handleBiometricToggle(setRequireFingerprint, requireFingerprint) },
-            { icon: Mic, label: 'Voice Print', desc: 'Require voice verification for login', color: 'text-purple-500', bg: 'bg-purple-50', value: requireVoice, toggle: () => handleBiometricToggle(setRequireVoice, requireVoice) },
-            { icon: Dice5, label: 'Random', desc: 'Randomly pick any enrolled biometric method', color: 'text-amber-500', bg: 'bg-amber-50', value: biometricRandom, toggle: () => handleBiometricRandom(!biometricRandom) },
-            { icon: Ban, label: 'None', desc: 'Skip biometric verification — challenge only', color: 'text-slate-400', bg: 'bg-slate-100', value: biometricNone, toggle: () => handleBiometricNone(!biometricNone) },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${item.bg}`}><item.icon className={`h-5 w-5 ${item.color}`} /></div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{item.label}</p>
-                  <p className="text-xs text-slate-400">{item.desc}</p>
-                </div>
+          {/* None — always visible at top */}
+          <div className="flex items-center justify-between py-3 first:pt-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-slate-100"><Ban className="h-5 w-5 text-slate-400" /></div>
+              <div>
+                <p className="text-sm font-medium text-slate-900">None</p>
+                <p className="text-xs text-slate-400">Skip biometric verification — challenge only</p>
               </div>
-              <button type="button" onClick={item.toggle}>
-                {item.value ? <ToggleRight className="h-8 w-8 text-red-600" /> : <ToggleLeft className="h-8 w-8 text-slate-300" />}
-              </button>
             </div>
-          ))}
+            <button type="button" onClick={() => handleBiometricNone(!biometricNone)}>
+              {biometricNone ? <ToggleRight className="h-8 w-8 text-red-600" /> : <ToggleLeft className="h-8 w-8 text-slate-300" />}
+            </button>
+          </div>
+
+          {/* Other biometric options — collapse when None is active */}
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${biometricNone ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
+            <div className="divide-y divide-slate-100">
+              {[
+                { icon: Dice5, label: 'Random', desc: 'Randomly pick any enrolled biometric method', color: 'text-amber-500', bg: 'bg-amber-50', value: biometricRandom, toggle: () => handleBiometricRandom(!biometricRandom) },
+                { icon: ScanFace, label: 'Face Recognition', desc: 'Require face verification for login', color: 'text-blue-500', bg: 'bg-blue-50', value: requireFace, toggle: () => handleBiometricToggle(setRequireFace, requireFace) },
+                { icon: Fingerprint, label: 'Fingerprint', desc: 'Require fingerprint verification for login', color: 'text-green-500', bg: 'bg-green-50', value: requireFingerprint, toggle: () => handleBiometricToggle(setRequireFingerprint, requireFingerprint) },
+                { icon: Mic, label: 'Voice Print', desc: 'Require voice verification for login', color: 'text-purple-500', bg: 'bg-purple-50', value: requireVoice, toggle: () => handleBiometricToggle(setRequireVoice, requireVoice) },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${item.bg}`}><item.icon className={`h-5 w-5 ${item.color}`} /></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{item.label}</p>
+                      <p className="text-xs text-slate-400">{item.desc}</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={item.toggle}>
+                    {item.value ? <ToggleRight className="h-8 w-8 text-red-600" /> : <ToggleLeft className="h-8 w-8 text-slate-300" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which biometric methods are required. "None" skips biometric verification entirely.</p>
       </section>
