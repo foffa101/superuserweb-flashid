@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { app } from '../lib/firebase';
+
+const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 import {
   mockTenants,
   generateLicenseKey,
@@ -64,6 +68,28 @@ export default function Tenants() {
   const [isEditing, setIsEditing] = useState(false);
   const [newSite, setNewSite] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
+
+  // Load admin whitelist from Firestore
+  useEffect(() => {
+    getDoc(doc(db, 'admin_config', 'whitelist')).then((snap) => {
+      if (snap.exists()) {
+        setAdminWhitelist(snap.data().emails || []);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const toggleAdminAccess = async (email: string, grant: boolean) => {
+    const updated = grant
+      ? [...adminWhitelist.filter(e => e !== email.toLowerCase()), email.toLowerCase()]
+      : adminWhitelist.filter(e => e !== email.toLowerCase());
+    setAdminWhitelist(updated);
+    try {
+      await setDoc(doc(db, 'admin_config', 'whitelist'), { emails: updated });
+    } catch (e) {
+      console.error('Failed to update admin whitelist:', e);
+    }
+  };
 
   const filteredTenants = tenants.filter((t) => {
     if (globalFilter !== 'all' && t.type !== globalFilter) return false;
@@ -433,6 +459,27 @@ export default function Tenants() {
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
             />
           </div>
+
+          {/* Admin Portal Access */}
+          {formData.email && (
+            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={adminWhitelist.includes((formData.email || '').toLowerCase())}
+                  onChange={(e) => toggleAdminAccess(formData.email || '', e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 accent-red-600"
+                />
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-indigo-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Create Admin Portal</p>
+                    <p className="text-xs text-slate-400">Grant <span className="font-medium text-slate-600">{formData.email}</span> access to the Admin Portal (flashid-admin.web.app)</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-3">
