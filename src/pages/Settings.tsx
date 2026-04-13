@@ -88,10 +88,18 @@ export default function Settings({ user }: SettingsProps) {
   const handleBiometricRandom = (on: boolean) => {
     setBiometricRandom(on);
     if (on) { setBiometricNone(false); }
+    else if (!requireFace && !requireFingerprint && !requireVoice) { setBiometricNone(true); }
   };
   const handleBiometricToggle = (setter: (v: boolean) => void, value: boolean) => {
     setter(!value);
     if (!value) { setBiometricNone(false); }
+    else {
+      // Turning off — check if all will be off
+      const nextFace = setter === setRequireFace ? false : requireFace;
+      const nextFinger = setter === setRequireFingerprint ? false : requireFingerprint;
+      const nextVoice = setter === setRequireVoice ? false : requireVoice;
+      if (!nextFace && !nextFinger && !nextVoice && !biometricRandom) { setBiometricNone(true); }
+    }
   };
 
   // Access management — whitelist
