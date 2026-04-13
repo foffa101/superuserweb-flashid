@@ -65,7 +65,7 @@ export async function createSession(
     challenge,
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
-    siteUrl: 'superadmin.flashid.com',
+    siteUrl: window.location.origin,
     siteName: 'Flash ID Super Admin',
     verifiedBy: null,
     biometricMethod: null,
@@ -77,7 +77,8 @@ export async function createSession(
 
   await setDoc(doc(db, 'auth_sessions', sessionId), session);
 
-  let qrUrl = `flashid://auth?sid=${sessionId}&url=superadmin.flashid.com&name=${encodeURIComponent('Flash ID Super Admin')}&cb=firebase&ch=${challenge}`;
+  const siteOrigin = window.location.origin;
+  let qrUrl = `flashid://auth?sid=${sessionId}&url=${encodeURIComponent(siteOrigin)}&name=${encodeURIComponent('Flash ID Super Admin')}&cb=firebase&ch=${challenge}`;
   qrUrl += `&v=${biometrics?.face ? '1' : '0'}&k=${biometrics?.fingerprint ? '1' : '0'}&w=${biometrics?.voice ? '1' : '0'}`;
   if (verificationMethod && verificationMethod !== 'none') {
     qrUrl += `&m=${verificationMethod}`;
