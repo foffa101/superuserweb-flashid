@@ -46,9 +46,7 @@ service cloud.firestore {
     // Security is enforced by: challenge token (must match QR), session expiry, biometric verification
     // The app user approving may have a different UID than the portal user who created the session
     match /auth_sessions/{sessionId} {
-      allow create: if isAuthenticated();
-      allow read: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read, write: if isAuthenticated();
     }
 
     // Sites authorized via the Flash ID app (synced to web portal)
