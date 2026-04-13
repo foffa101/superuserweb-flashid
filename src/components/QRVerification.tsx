@@ -33,6 +33,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challengeData, setChallengeData] = useState<ChallengeData | null>(null);
+  const [scanned, setScanned] = useState(false);
   const [downloadView, setDownloadView] = useState<DownloadView>('none');
 
   const unsubRef = useRef<(() => void) | null>(null);
@@ -84,6 +85,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
       unsubRef.current = subscribeToSession(result.sessionId, (session) => {
         if (!session) return;
         if (session.challenge_data) setChallengeData(session.challenge_data);
+        if (session.scanned || session.uid || session.challenge_response) setScanned(true);
         if (session.status === 'approved') {
           if (session.uid && session.uid !== userId) {
             setError('Verification failed: approver identity mismatch. Please try again with the correct account.');
@@ -184,23 +186,44 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
               </p>
             </div>
 
-            {/* QR Code */}
-            <div className="flex justify-center">
-              <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
-                {qrImageUrl && (
-                  <img
-                    src={qrImageUrl}
-                    alt="Verification QR Code"
-                    className="w-[280px] h-[280px] rounded-lg"
-                  />
-                )}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100">
-                    <QrCode className="w-5 h-5 text-red-600" />
+            {/* QR Code — hidden after scan, replaced by challenge */}
+            {!scanned ? (
+              <>
+                <div className="flex justify-center">
+                  <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
+                    {qrImageUrl && (
+                      <img
+                        src={qrImageUrl}
+                        alt="Verification QR Code"
+                        className="w-[280px] h-[280px] rounded-lg"
+                      />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100">
+                        <QrCode className="w-5 h-5 text-red-600" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Waiting indicator */}
+                <div className="flex items-center justify-center gap-2 text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-medium">Waiting for verification...</span>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Challenge display — shown after QR scan */}
+                {challengeData && <ChallengeDisplay challengeData={challengeData} />}
+
+                {/* Verifying indicator */}
+                <div className="flex items-center justify-center gap-2 text-blue-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-medium">Verifying on Flash ID app...</span>
+                </div>
+              </>
+            )}
 
             {/* Countdown */}
             <div className="flex flex-col items-center gap-2">
@@ -216,15 +239,6 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                   style={{ width: `${progress * 100}%` }}
                 />
               </div>
-            </div>
-
-            {/* Challenge display */}
-            {challengeData && <ChallengeDisplay challengeData={challengeData} />}
-
-            {/* Waiting indicator */}
-            <div className="flex items-center justify-center gap-2 text-slate-400">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm font-medium">Waiting for verification...</span>
             </div>
 
             {/* Cancel */}

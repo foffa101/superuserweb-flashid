@@ -23,6 +23,8 @@ export interface AuthSession {
   biometricMethod: string | null;
   uid?: string; // Firebase UID of the approver (set by the app)
   challenge_data?: ChallengeData;
+  challenge_response?: Record<string, unknown>;
+  scanned?: boolean; // Set by the app when QR is scanned
 }
 
 /** Generate a random hex string of the given byte-length (default 16 -> 32 hex chars). */
