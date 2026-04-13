@@ -369,10 +369,10 @@ export default function Settings({ user }: SettingsProps) {
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${biometricNone ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
             <div className="divide-y divide-slate-100">
               {[
-                { icon: Dice5, label: 'Random', desc: 'Randomly pick any enrolled biometric method', color: 'text-amber-500', bg: 'bg-amber-50', value: biometricRandom, toggle: () => handleBiometricRandom(!biometricRandom) },
                 { icon: ScanFace, label: 'Face Recognition', desc: 'Require face verification for login', color: 'text-blue-500', bg: 'bg-blue-50', value: requireFace, toggle: () => handleBiometricToggle(setRequireFace, requireFace) },
                 { icon: Fingerprint, label: 'Fingerprint', desc: 'Require fingerprint verification for login', color: 'text-green-500', bg: 'bg-green-50', value: requireFingerprint, toggle: () => handleBiometricToggle(setRequireFingerprint, requireFingerprint) },
                 { icon: Mic, label: 'Voice Print', desc: 'Require voice verification for login', color: 'text-purple-500', bg: 'bg-purple-50', value: requireVoice, toggle: () => handleBiometricToggle(setRequireVoice, requireVoice) },
+                { icon: Dice5, label: 'Random', desc: 'Randomly pick any enrolled biometric method', color: 'text-amber-500', bg: 'bg-amber-50', value: biometricRandom, toggle: () => handleBiometricRandom(!biometricRandom) },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-3">
