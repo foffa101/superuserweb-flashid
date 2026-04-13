@@ -26,7 +26,7 @@ interface QRVerificationProps {
 }
 
 export function QRVerification({ userId, onVerified, onCancel }: QRVerificationProps) {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [, setSessionId] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string>('');
   const [status, setStatus] = useState<AuthSession['status']>('pending');
   const [secondsLeft, setSecondsLeft] = useState(90);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldAlert, Plus, Trash2, Settings } from 'lucide-react';
+import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
 import { mockBannedIPs, type BannedIP } from '../lib/api';
 
 function formatDateTime(iso: string): string {

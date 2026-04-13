@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X, Trash2,
+  Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
   ChevronDown, ChevronUp,
 } from 'lucide-react';
 import {

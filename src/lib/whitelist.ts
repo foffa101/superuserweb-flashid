@@ -11,7 +11,7 @@ const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 // If a non-whitelisted user tries to read, Firestore returns permission-denied.
 // That error = not whitelisted = access denied.
 
-const DEFAULT_EMAILS = ['okafifi@gmail.com', 'webauthor@gmail.com'];
+const DEFAULT_EMAILS = ['okafifi@gmail.com', 'webauthor@gmail.com', 'omar@afifi.com'];
 
 export async function isEmailWhitelisted(email: string): Promise<boolean> {
   try {

@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, ChevronDown, Eye } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail } from 'lucide-react';
 import { type User } from '../lib/firebase';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { app } from '../lib/firebase';
+
+const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 
 interface SettingsProps {
   user: User;
@@ -84,6 +88,119 @@ export default function Settings({ user }: SettingsProps) {
     if (!value) { setBiometricNone(false); }
   };
 
+  // Access management — whitelist
+  const [whitelistEmails, setWhitelistEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [whitelistLoading, setWhitelistLoading] = useState(true);
+  const [whitelistSaving, setWhitelistSaving] = useState(false);
+
+  const loadWhitelist = useCallback(async () => {
+    try {
+      const snap = await getDoc(doc(db, 'superadmin_config', 'whitelist'));
+      if (snap.exists()) {
+        setWhitelistEmails(snap.data().emails || []);
+      } else {
+        // Seed from defaults
+        const defaults = ['okafifi@gmail.com', 'webauthor@gmail.com', 'omar@afifi.com'];
+        setWhitelistEmails(defaults);
+        await setDoc(doc(db, 'superadmin_config', 'whitelist'), { emails: defaults });
+      }
+    } catch {
+      setWhitelistEmails(['okafifi@gmail.com', 'webauthor@gmail.com', 'omar@afifi.com']);
+    } finally {
+      setWhitelistLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadWhitelist(); }, [loadWhitelist]);
+
+  const saveWhitelist = async (emails: string[]) => {
+    setWhitelistSaving(true);
+    try {
+      await setDoc(doc(db, 'superadmin_config', 'whitelist'), { emails });
+      setWhitelistEmails(emails);
+    } catch (e) {
+      console.error('Failed to save whitelist:', e);
+    } finally {
+      setWhitelistSaving(false);
+    }
+  };
+
+  // Push approval flow
+  const [pendingApproval, setPendingApproval] = useState<string | null>(null); // approval doc ID
+  const [approvalStatus, setApprovalStatus] = useState<'idle' | 'waiting' | 'approved' | 'denied'>('idle');
+
+  const addEmail = async () => {
+    const email = newEmail.trim().toLowerCase();
+    if (!email || !email.includes('@') || whitelistEmails.includes(email)) return;
+
+    // Create approval request in Firestore
+    const approvalId = `approval_${Date.now()}`;
+    const approvalData = {
+      type: 'add_admin',
+      email,
+      requestedBy: user.email,
+      requestedByUid: user.uid,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 120 * 1000).toISOString(),
+    };
+
+    try {
+      await setDoc(doc(db, 'admin_approvals', approvalId), approvalData);
+      setPendingApproval(approvalId);
+      setApprovalStatus('waiting');
+    } catch (e) {
+      console.error('Failed to create approval:', e);
+    }
+  };
+
+  // Listen for approval status changes
+  useEffect(() => {
+    if (!pendingApproval) return;
+    const unsub = onSnapshot(doc(db, 'admin_approvals', pendingApproval), (snap) => {
+      const data = snap.data();
+      if (!data) return;
+      if (data.status === 'approved') {
+        setApprovalStatus('approved');
+        // Add the email to whitelist
+        const email = data.email;
+        if (email && !whitelistEmails.includes(email)) {
+          saveWhitelist([...whitelistEmails, email]);
+        }
+        setNewEmail('');
+        // Cleanup
+        deleteDoc(doc(db, 'admin_approvals', pendingApproval));
+        setTimeout(() => {
+          setPendingApproval(null);
+          setApprovalStatus('idle');
+        }, 2000);
+      } else if (data.status === 'denied') {
+        setApprovalStatus('denied');
+        deleteDoc(doc(db, 'admin_approvals', pendingApproval));
+        setTimeout(() => {
+          setPendingApproval(null);
+          setApprovalStatus('idle');
+        }, 2000);
+      }
+    });
+    // Timeout after 2 minutes
+    const timeout = setTimeout(() => {
+      if (approvalStatus === 'waiting') {
+        setApprovalStatus('idle');
+        setPendingApproval(null);
+        deleteDoc(doc(db, 'admin_approvals', pendingApproval));
+      }
+    }, 120000);
+    return () => { unsub(); clearTimeout(timeout); };
+  }, [pendingApproval]);
+
+  const removeEmail = (email: string) => {
+    // Don't allow removing yourself
+    if (email.toLowerCase() === user.email?.toLowerCase()) return;
+    saveWhitelist(whitelistEmails.filter(e => e !== email));
+  };
+
   // Challenge methods (single-select)
   const [enabledMethods, setEnabledMethods] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem('superadmin-verification-methods') || '{}'); } catch { return {}; }
@@ -149,6 +266,108 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400">Profile info is managed via Google SSO and is read-only here.</p>
+      </section>
+
+      {/* Access Management */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Access Management</h2>
+        <p className="text-xs text-slate-400 mb-4">Manage who can access the Super Admin portal. Changes take effect immediately.</p>
+
+        {/* Add email */}
+        {approvalStatus === 'idle' && (
+          <div className="flex gap-2 mb-4">
+            <div className="flex-1 relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') addEmail(); }}
+                placeholder="email@example.com"
+                className="w-full border border-slate-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+            <button
+              onClick={addEmail}
+              disabled={whitelistSaving || !newEmail.trim().includes('@')}
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add
+            </button>
+          </div>
+        )}
+
+        {/* Approval waiting state */}
+        {approvalStatus === 'waiting' && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+            <div className="flex justify-center mb-2">
+              <div className="h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm font-semibold text-amber-800">Waiting for approval</p>
+            <p className="text-xs text-amber-600 mt-1">
+              Approve adding <span className="font-bold">{newEmail}</span> on your Flash ID app (Agents tab)
+            </p>
+            <button
+              onClick={() => {
+                if (pendingApproval) deleteDoc(doc(db, 'admin_approvals', pendingApproval));
+                setPendingApproval(null);
+                setApprovalStatus('idle');
+              }}
+              className="mt-3 text-xs text-amber-500 hover:text-amber-700 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {approvalStatus === 'approved' && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+            <p className="text-sm font-semibold text-green-800">Approved — email added</p>
+          </div>
+        )}
+
+        {approvalStatus === 'denied' && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p className="text-sm font-semibold text-red-800">Denied — email not added</p>
+          </div>
+        )}
+
+        {/* Email list */}
+        {whitelistLoading ? (
+          <p className="text-sm text-slate-400">Loading...</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {whitelistEmails.map((email) => {
+              const isCurrentUser = email.toLowerCase() === user.email?.toLowerCase();
+              return (
+                <div key={email} className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-slate-100">
+                      <Users className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{email}</p>
+                      {isCurrentUser && <p className="text-[10px] text-red-500 font-bold uppercase">You</p>}
+                    </div>
+                  </div>
+                  {!isCurrentUser && (
+                    <button
+                      onClick={() => removeEmail(email)}
+                      disabled={whitelistSaving}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-slate-400 mt-3">
+          {whitelistEmails.length} authorized {whitelistEmails.length === 1 ? 'user' : 'users'}. You cannot remove yourself.
+        </p>
       </section>
 
       {/* Theme Settings */}
