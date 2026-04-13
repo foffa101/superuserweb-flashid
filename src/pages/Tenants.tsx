@@ -3,6 +3,9 @@ import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
   ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
+import { FieldAgentIcon } from '../components/FieldAgentIcon';
+import { useFieldAgentGuard } from '../components/FieldAgentGuard';
+import { ApprovalOverlay } from '../components/ApprovalOverlay';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   db,
@@ -73,6 +76,10 @@ export default function Tenants() {
   const [newSite, setNewSite] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
+
+  // Field Agent guards
+  const addTenantGuard = useFieldAgentGuard('add_tenant');
+  const editTenantGuard = useFieldAgentGuard('edit_tenant');
 
   // Load tenants from Firestore
   useEffect(() => {
@@ -511,11 +518,29 @@ export default function Tenants() {
             </div>
           )}
 
+          {/* Approval overlays */}
+          {addTenantGuard.status !== 'idle' && addTenantGuard.status !== 'checking' && <ApprovalOverlay status={addTenantGuard.status} onCancel={addTenantGuard.reset} />}
+          {editTenantGuard.status !== 'idle' && editTenantGuard.status !== 'checking' && <ApprovalOverlay status={editTenantGuard.status} onCancel={editTenantGuard.reset} />}
+
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <button onClick={saveForm} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">
-              {isEditing ? 'Save Changes' : 'Create Tenant'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const guard = isEditing ? editTenantGuard : addTenantGuard;
+                  guard.executeWithGuard(
+                    `${isEditing ? 'Edit' : 'Add'} Tenant: ${formData.name}`,
+                    () => saveForm(),
+                    'tenants',
+                    isEditing ? 'Edit Tenant' : 'Add Tenant',
+                  );
+                }}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+              >
+                {isEditing ? 'Save Changes' : 'Create Tenant'}
+              </button>
+              <FieldAgentIcon action={isEditing ? 'edit_tenant' : 'add_tenant'} actionLabel={isEditing ? 'Edit Tenant' : 'Add Tenant'} page="tenants" />
+            </div>
             <button onClick={() => setView('list')} className="px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50">
               Cancel
             </button>
@@ -538,9 +563,12 @@ export default function Tenants() {
             <p className="text-sm text-slate-500 mt-1">{filteredTenants.length} tenants</p>
           </div>
         </div>
-        <button onClick={openAdd} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Add Tenant
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={openAdd} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Tenant
+          </button>
+          <FieldAgentIcon action="add_tenant" actionLabel="Add Tenant" page="tenants" />
+        </div>
       </div>
 
       {/* Filters */}
@@ -613,6 +641,7 @@ export default function Tenants() {
                           >
                             {t.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                           </button>
+                          <FieldAgentIcon action="toggle_tenant_status" actionLabel="Change Tenant Status" page="tenants" />
                         </div>
                       </td>
                     </tr>

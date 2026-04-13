@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
+import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import { type BannedIP } from '../lib/api';
 import {
   getBannedIPs,
@@ -226,13 +227,16 @@ export default function Security() {
             <h2 className="text-lg font-semibold text-slate-900">Active IP Bans</h2>
             <p className="text-xs text-slate-500 mt-0.5">{bannedIPs.length} banned IPs</p>
           </div>
-          <button
-            onClick={() => setShowBanForm(!showBanForm)}
-            className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Ban IP
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBanForm(!showBanForm)}
+              className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Ban IP
+            </button>
+            <FieldAgentIcon action="ban_ip" actionLabel="Ban IP Address" page="security" />
+          </div>
         </div>
 
         {showBanForm && (
@@ -493,12 +497,15 @@ export default function Security() {
 
       {/* Save */}
       <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-        >
-          {saved ? 'Saved!' : 'Save Security Settings'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSave}
+            className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+          >
+            {saved ? 'Saved!' : 'Save Security Settings'}
+          </button>
+          <FieldAgentIcon action="save_security" actionLabel="Save Security Settings" page="security" />
+        </div>
       </div>
     </div>
   );

@@ -291,6 +291,79 @@ export async function updateSecuritySettings(data: Partial<SecuritySettings>): P
   }
 }
 
+// ─── Field Agents ───
+
+export interface FieldAgent {
+  id: string;
+  action: string;
+  actionLabel: string;
+  page: string;
+  notifyEmail: string;
+  notifyUid: string;
+  enabled: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
+export async function getFieldAgents(): Promise<FieldAgent[]> {
+  try {
+    const snap = await getDocs(collection(db, 'field_agents'));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FieldAgent));
+  } catch (e) {
+    console.error('Failed to get field agents:', e);
+    return [];
+  }
+}
+
+export async function getFieldAgentForAction(action: string): Promise<FieldAgent | null> {
+  try {
+    const snap = await getDoc(doc(db, 'field_agents', action));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as FieldAgent;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveFieldAgent(agent: FieldAgent): Promise<void> {
+  try {
+    const { id, ...data } = agent;
+    await setDoc(doc(db, 'field_agents', id), data);
+  } catch (e) {
+    console.error('Failed to save field agent:', e);
+    throw e;
+  }
+}
+
+export async function deleteFieldAgent(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'field_agents', id));
+  } catch (e) {
+    console.error('Failed to delete field agent:', e);
+    throw e;
+  }
+}
+
+export async function createApprovalRequest(data: {
+  type: string;
+  action: string;
+  actionLabel: string;
+  page: string;
+  details: string;
+  requestedBy: string;
+  requestedByUid: string;
+  notifyEmail: string;
+}): Promise<string> {
+  const approvalId = `approval_${Date.now()}`;
+  await setDoc(doc(db, 'admin_approvals', approvalId), {
+    ...data,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 120 * 1000).toISOString(),
+  });
+  return approvalId;
+}
+
 // ─── Seed Initial Data ───
 
 export async function seedInitialData(): Promise<void> {

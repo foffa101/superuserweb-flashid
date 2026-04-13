@@ -3,6 +3,7 @@ import {
   DollarSign, Building2, Phone, CreditCard, FileText, Download, Send,
   ArrowLeft, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import StatCard from '../components/StatCard';
 import {
   type Tenant,
@@ -241,6 +242,9 @@ export default function Billing() {
                             <CheckCircle className="h-4 w-4" />
                           </button>
                         )}
+                        {inv.status !== 'paid' && (
+                          <FieldAgentIcon action="mark_paid" actionLabel="Mark Invoice Paid" page="billing" />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -431,15 +435,18 @@ export default function Billing() {
                           {/* Quick actions */}
                           <div className="flex items-center gap-2">
                             {invStatus && invStatus !== 'paid' && (
-                              <button
-                                onClick={() => {
-                                  const unpaid = tenantInvs.find((inv) => inv.status !== 'paid');
-                                  if (unpaid) handleMarkPaid(unpaid.id);
-                                }}
-                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 flex items-center gap-1.5"
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" /> Mark as Paid
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    const unpaid = tenantInvs.find((inv) => inv.status !== 'paid');
+                                    if (unpaid) handleMarkPaid(unpaid.id);
+                                  }}
+                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 flex items-center gap-1.5"
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" /> Mark as Paid
+                                </button>
+                                <FieldAgentIcon action="mark_paid" actionLabel="Mark Invoice Paid" page="billing" />
+                              </div>
                             )}
                             {invStatus && invStatus !== 'paid' && (
                               <button className="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 flex items-center gap-1.5">

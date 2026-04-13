@@ -74,6 +74,11 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    // Field Agents (action approval watchers, super admin portal)
+    match /field_agents/{agentId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // Tenant management (super admin portal)
     match /tenants/{tenantId} {
       allow read, write: if isAuthenticated();
