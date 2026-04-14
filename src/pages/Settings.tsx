@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Trash2 } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Trash2, Save, CheckCircle } from 'lucide-react';
 import { type User } from '../lib/firebase';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { app } from '../lib/firebase';
@@ -635,9 +635,19 @@ export default function Settings({ user }: SettingsProps) {
       </section>
 
       {/* Save */}
-      <div className="flex justify-end">
-        <button onClick={handleSave} className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-          {saved ? 'Saved!' : 'Save Settings'}
+      <div className="flex justify-end items-center gap-3">
+        {saved && (
+          <span className="flex items-center gap-1 text-sm text-green-600">
+            <CheckCircle className="h-4 w-4" />
+            Settings saved
+          </span>
+        )}
+        <button
+          onClick={handleSave}
+          className="flex items-center gap-2 bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+        >
+          <Save className="h-4 w-4" />
+          Save Settings
         </button>
       </div>
     </div>
