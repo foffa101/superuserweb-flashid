@@ -42,16 +42,18 @@ export default function Login() {
               letterSpacing: '0.5px',
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" />
-              <path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2" />
-              <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
-              <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
-              <path d="M8.65 22c.21-.66.45-1.32.57-2" />
-              <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
-              <path d="M2 16h.01" />
-              <path d="M21.8 16c.2-2 .131-5.354 0-6" />
-              <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2" />
+            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+              <path d="M24 4C16 4 10 10 10 18c0 5 2 8 4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 4c8 0 14 6 14 14 0 5-2 8-4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 8c-5.5 0-10 4.5-10 10 0 3.5 1.5 6 3 8" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 8c5.5 0 10 4.5 10 10 0 3.5-1.5 6-3 8" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 12c-3.5 0-6 2.5-6 6s1 4.5 2 6" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 12c3.5 0 6 2.5 6 6s-1 4.5-2 6" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 16c-1.5 0-2.5 1-2.5 2.5S23 21 24 22" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M24 16c1.5 0 2.5 1 2.5 2.5S25 21 24 22" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M16 36c0-3 3.5-5 8-5s8 2 8 5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M19 39c0-2 2.2-3.5 5-3.5s5 1.5 5 3.5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M22 42c0-1 0.9-1.5 2-1.5s2 0.5 2 1.5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Flash ID'}
           </button>
