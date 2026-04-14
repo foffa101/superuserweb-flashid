@@ -35,6 +35,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [challengePassed, setChallengePassed] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [honeypotValue, setHoneypotValue] = useState('');
+  const [biometricsRequired, setBiometricsRequired] = useState(false);
+  const [challengeRequired, setChallengeRequired] = useState(false);
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -64,6 +66,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     setScanned(false);
     setChallengePassed(false);
     setChallengeData(null);
+    setBiometricsRequired(false);
+    setChallengeRequired(false);
 
     // Rate limit — cooldown prevents rapid session spam
     setCooldown(true);
@@ -105,6 +109,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
       unsubRef.current = subscribeToSession(result.sessionId, (session) => {
         if (!session) return;
         if (session.challenge_data) setChallengeData(session.challenge_data);
+        setChallengeRequired(!!session.challenge_data);
+        setBiometricsRequired(!!session.biometricsRequired);
         if (session.scanned || session.uid || session.challenge_response) setScanned(true);
         if (session.challenge_passed) setChallengePassed(true);
 
@@ -157,7 +163,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   // Auto-redirect on approval
   useEffect(() => {
     if (status === 'approved') {
-      const timeout = setTimeout(() => onVerified(), 1200);
+      const timeout = setTimeout(() => onVerified(), 2000);
       return () => clearTimeout(timeout);
     }
   }, [status, onVerified]);
@@ -189,23 +195,41 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
           <h1 className="text-3xl font-bold text-slate-900 tracking-wide">
             Flash <span className="text-blue-600">ID</span>
           </h1>
-          <p className="text-slate-500 text-sm">Scan with your Flash ID app to log in</p>
+          <p className="text-slate-500 text-base">
+            {!scanned
+              ? 'Scan with your Flash ID app to log in'
+              : challengeRequired && !challengePassed
+                ? 'Complete the following Challenge Verification'
+                : biometricsRequired
+                  ? 'Complete Biometrics Verification on App'
+                  : 'Confirm on your Flash ID app'}
+          </p>
         </div>
 
         {/* --- PENDING --- */}
         {status === 'pending' && !isCreating && (
           <div className="space-y-5">
 
-            {/* Status indicator — always above the content */}
-            <div className="flex items-center justify-center gap-2 text-slate-400">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm font-medium">
-                {!scanned
-                  ? 'Waiting for verification...'
-                  : challengePassed
-                    ? 'Waiting for biometric verification...'
-                    : 'Verifying on Flash ID app...'}
-              </span>
+            {/* Status pill — background acts as countdown timer */}
+            <div className="flex justify-center">
+              <div className="relative w-[280px] h-10 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 bg-blue-100 rounded-full transition-all duration-300"
+                  style={{ width: `${progress * 100}%` }}
+                />
+                <div className="relative z-10 flex items-center justify-center gap-2 h-full text-slate-700">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-base font-medium">
+                    {!scanned
+                      ? 'Waiting for Scan...'
+                      : challengeRequired && !challengePassed
+                        ? 'Verifying Challenge on App...'
+                        : biometricsRequired
+                          ? 'Waiting for biometric verification...'
+                          : 'Waiting for approval...'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* QR Code — hidden after scan, replaced by challenge */}
@@ -226,10 +250,14 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                   </div>
                 </div>
               </div>
-            ) : challengePassed ? (
+            ) : challengeRequired && !challengePassed ? (
+              <>
+                {challengeData && <ChallengeDisplay challengeData={challengeData} />}
+              </>
+            ) : biometricsRequired ? (
               <div className="flex flex-col items-center gap-4 py-6">
                 <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Fingerprint className="w-8 h-8 text-blue-600" />
+                  <Fingerprint className="w-8 h-8 text-slate-400" />
                 </div>
                 <div className="text-center space-y-1">
                   <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
@@ -237,31 +265,29 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 </div>
               </div>
             ) : (
-              <>
-                {challengeData && <ChallengeDisplay challengeData={challengeData} />}
-              </>
+              <div className="flex flex-col items-center gap-4 py-6">
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Fingerprint className="w-8 h-8 text-slate-400" />
+                </div>
+                <div className="text-center space-y-1">
+                  <h3 className="text-lg font-bold text-slate-900">Confirm on your phone</h3>
+                  <p className="text-sm text-slate-500">Tap approve in the Flash ID app to continue</p>
+                </div>
+              </div>
             )}
 
-            {/* Countdown */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2 text-slate-500">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  Expires in <span className="font-bold text-slate-900">{secondsLeft}s</span>
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-500 rounded-full transition-all duration-300"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
+            {/* Countdown — plain text */}
+            <div className="flex items-center justify-center gap-2 text-slate-500">
+              <Clock className="w-4 h-4" />
+              <span className="text-base font-medium">
+                Expires in <span className="font-bold text-slate-900">{secondsLeft}s</span>
+              </span>
             </div>
 
             {/* Cancel */}
             <button
               onClick={handleCancel}
-              className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
+              className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
             >
               Cancel
             </button>
@@ -269,11 +295,27 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
           </div>
         )}
 
-        {/* --- CREATING --- */}
+        {/* --- CREATING — full-layout skeleton so card doesn't resize --- */}
         {isCreating && (
-          <div className="py-12 flex flex-col items-center gap-4">
-            <Loader2 className="w-10 h-10 text-red-600 animate-spin" />
-            <p className="text-slate-500 font-medium">Creating secure session...</p>
+          <div className="space-y-5">
+            <div className="flex justify-center">
+              <div className="flex items-center justify-center gap-2 bg-blue-100 text-slate-700 rounded-full py-2 px-4 w-[280px]">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-base font-medium">Creating secure session...</span>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
+                <div className="w-[280px] h-[280px] rounded-lg bg-slate-50 flex items-center justify-center">
+                  <Loader2 className="w-10 h-10 text-slate-300 animate-spin" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-slate-400">
+              <Clock className="w-4 h-4" />
+              <span className="text-base font-medium">Preparing...</span>
+            </div>
+            <div className="h-12" />
           </div>
         )}
 
@@ -331,7 +373,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </button>
             <button
               onClick={handleCancel}
-              className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
+              className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
             >
               Cancel
             </button>

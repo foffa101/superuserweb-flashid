@@ -27,6 +27,7 @@ export interface AuthSession {
   scanned?: boolean; // Set by the app when QR is scanned
   scannedBy?: string; // Device fingerprint for replay prevention
   challenge_passed?: boolean; // Set by the app when challenge succeeds
+  biometricsRequired?: boolean; // True if any biometric (face/fingerprint/voice) is required
 }
 
 /** Generate a random hex string of the given byte-length (default 16 -> 32 hex chars). */
@@ -63,6 +64,8 @@ export async function createSession(
   const now = new Date();
   const expiresAt = new Date(now.getTime() + qrTimeout * 1000);
 
+  const biometricsRequired = !!(biometrics?.face || biometrics?.fingerprint || biometrics?.voice);
+
   const session: AuthSession = {
     userId,
     status: 'pending',
@@ -73,6 +76,7 @@ export async function createSession(
     siteName: 'Flash ID Super Admin',
     verifiedBy: null,
     biometricMethod: null,
+    biometricsRequired,
   };
 
   if (verificationMethod && verificationMethod !== 'none') {
