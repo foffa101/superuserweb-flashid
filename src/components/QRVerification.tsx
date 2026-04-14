@@ -13,13 +13,9 @@ import {
   Loader2,
   RefreshCw,
   Fingerprint,
-  Smartphone,
 } from 'lucide-react';
 
-const ANDROID_URL = 'https://play.google.com/store/apps/details?id=com.flashid.app';
-const IOS_URL = 'https://apps.apple.com/app/flashid';
 
-type DownloadView = 'none' | 'android' | 'ios';
 
 interface QRVerificationProps {
   userId: string;
@@ -37,7 +33,6 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [challengeData, setChallengeData] = useState<ChallengeData | null>(null);
   const [scanned, setScanned] = useState(false);
   const [challengePassed, setChallengePassed] = useState(false);
-  const [downloadView, setDownloadView] = useState<DownloadView>('none');
   const [cooldown, setCooldown] = useState(false);
   const [honeypotValue, setHoneypotValue] = useState('');
 
@@ -66,7 +61,6 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     setIsCreating(true);
     setError(null);
     setStatus('pending');
-    setDownloadView('none');
     setScanned(false);
     setChallengePassed(false);
     setChallengeData(null);
@@ -185,45 +179,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         </div>
 
         {/* --- PENDING --- */}
-        {status === 'pending' && !isCreating && downloadView === 'none' && (
+        {status === 'pending' && !isCreating && (
           <div className="space-y-5">
-            {/* Download app buttons */}
-            <div className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                Don't have the app?
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setDownloadView('android');
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    unsubRef.current?.();
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.454 1.42a1 1 0 010 1.735l-2.454 1.42-2.537-2.537 2.537-2.038zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z" />
-                  </svg>
-                  Android
-                </button>
-                <button
-                  onClick={() => {
-                    setDownloadView('ios');
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    unsubRef.current?.();
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-900 transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                  </svg>
-                  iOS
-                </button>
-              </div>
-            </div>
-
-            <div className="h-px bg-slate-100" />
-
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-slate-900">Verify Your Identity</h2>
               <p className="text-slate-500 text-sm">
@@ -312,59 +269,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             >
               Cancel
             </button>
-          </div>
-        )}
 
-        {/* --- DOWNLOAD APP --- */}
-        {status === 'pending' && !isCreating && downloadView !== 'none' && (
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900">Download Flash ID</h2>
-              <p className="text-slate-500 text-sm">
-                Scan with your phone camera to download for {downloadView === 'android' ? 'Android' : 'iOS'}
-              </p>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
-                <img
-                  src={`https://quickchart.io/qr?text=${encodeURIComponent(downloadView === 'android' ? ANDROID_URL : IOS_URL)}&size=300&margin=2&ecLevel=H`}
-                  alt={`Download for ${downloadView === 'android' ? 'Android' : 'iOS'}`}
-                  className="w-[280px] h-[280px] rounded-lg"
-                />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100">
-                    <Smartphone className="w-5 h-5 text-red-600" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setDownloadView(downloadView === 'android' ? 'ios' : 'android')}
-              className="text-xs text-slate-400 font-bold hover:text-slate-600 transition-colors"
-            >
-              Switch to {downloadView === 'android' ? 'iOS' : 'Android'}
-            </button>
-
-            <button
-              onClick={() => {
-                setDownloadView('none');
-                startSession();
-              }}
-              disabled={cooldown}
-              className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className="w-5 h-5" />
-              I have the app — Log in
-            </button>
-
-            <button
-              onClick={handleCancel}
-              className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
-            >
-              Cancel
-            </button>
           </div>
         )}
 
