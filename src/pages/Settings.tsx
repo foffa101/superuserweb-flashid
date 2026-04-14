@@ -74,11 +74,22 @@ export default function Settings({ user }: SettingsProps) {
   const [requireFace, setRequireFace] = useState(() => localStorage.getItem('superadmin-require-face') === '1');
   const [requireFingerprint, setRequireFingerprint] = useState(() => localStorage.getItem('superadmin-require-fingerprint') === '1');
   const [requireVoice, setRequireVoice] = useState(() => localStorage.getItem('superadmin-require-voice') === '1');
-  const [biometricNone, setBiometricNone] = useState(() => localStorage.getItem('superadmin-biometric-none') === '1');
-  const [biometricRandom, setBiometricRandom] = useState(() => {
-    const stored = localStorage.getItem('superadmin-biometric-random');
+  // Default on first use: None selected. Invariant enforced below ensures
+  // that the Biometric Verification section is never left all-off.
+  const [biometricNone, setBiometricNone] = useState(() => {
+    const stored = localStorage.getItem('superadmin-biometric-none');
     return stored === null ? true : stored === '1';
   });
+  const [biometricRandom, setBiometricRandom] = useState(() => localStorage.getItem('superadmin-biometric-random') === '1');
+
+  // Invariant: the biometric section can never be all-off. If corrupted
+  // localStorage leaves every toggle false, fall back to None on mount.
+  useEffect(() => {
+    if (!requireFace && !requireFingerprint && !requireVoice && !biometricNone && !biometricRandom) {
+      setBiometricNone(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBiometricNone = (on: boolean) => {
     setBiometricNone(on);

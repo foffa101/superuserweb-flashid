@@ -9,6 +9,7 @@ import {
   QrCode,
   CheckCircle,
   XCircle,
+  X,
   Clock,
   Loader2,
   RefreshCw,
@@ -196,13 +197,15 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             Flash <span className="text-blue-600">ID</span>
           </h1>
           <p className="text-slate-500 text-base">
-            {!scanned
-              ? 'Scan with your Flash ID app to log in'
-              : challengeRequired && !challengePassed
-                ? 'Complete the following Challenge Verification'
-                : biometricsRequired
-                  ? 'Complete Biometrics Verification on App'
-                  : 'Confirm in your Flash ID app'}
+            {status === 'denied' && challengeRequired && !challengePassed
+              ? 'Challenge Verification Incomplete'
+              : !scanned
+                ? 'Scan with your Flash ID app to log in'
+                : challengeRequired && !challengePassed
+                  ? 'Complete the following Challenge Verification'
+                  : biometricsRequired
+                    ? 'Complete Biometrics Verification on App'
+                    : 'Confirm in your Flash ID app'}
           </p>
         </div>
 
@@ -336,13 +339,13 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         {/* --- DENIED --- */}
         {status === 'denied' && (
           <div className="py-8 space-y-4">
-            <p className="text-slate-500 text-sm">The request was denied on your device.</p>
             <div className="flex justify-center">
-              <div className="p-4 bg-red-100 rounded-full">
-                <XCircle className="w-12 h-12 text-red-600" />
+              <div className="p-4 bg-red-600 rounded-full">
+                <X className="w-12 h-12 text-white" strokeWidth={3} />
               </div>
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Verification Denied</h2>
+            <p className="text-slate-500 text-sm">The request was denied on your device.</p>
             {error && <p className="text-red-600 font-medium text-sm">{error}</p>}
             <button
               onClick={handleCancel}
