@@ -10,7 +10,8 @@ export interface ChallengeData {
   targets?: string[];
   sequence?: number[];
   phrase?: string;
-  pattern?: number[][];
+  // Flat array of [r0, c0, r1, c1, ...] — Firestore disallows nested arrays.
+  pattern?: number[];
   sound_id?: string;
   choices?: string[];
   correct_index?: number;
@@ -147,14 +148,16 @@ function generateVoicePhrase(): ChallengeData {
 }
 
 function generateTapPattern(): ChallengeData {
-  const pattern: number[][] = [];
+  // Flat pairs: [r0, c0, r1, c1, ...] — Firestore rejects nested arrays.
+  const pattern: number[] = [];
   const used = new Set<string>();
   const count = randomInt(3, 5);
-  while (pattern.length < count) {
-    const cell = [randomInt(0, 2), randomInt(0, 2)];
-    const key = `${cell[0]},${cell[1]}`;
+  while (pattern.length / 2 < count) {
+    const r = randomInt(0, 2);
+    const c = randomInt(0, 2);
+    const key = `${r},${c}`;
     if (!used.has(key)) {
-      pattern.push(cell);
+      pattern.push(r, c);
       used.add(key);
     }
   }
