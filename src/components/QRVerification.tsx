@@ -171,22 +171,30 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center space-y-6">
-        {/* Logo — red theme for super admin */}
-        <div className="flex justify-center">
-          <div className="p-4 bg-red-600 rounded-2xl shadow-xl">
-            <Fingerprint className="w-10 h-10 text-white" />
-          </div>
+        {/* Flash ID logo — colorful fingerprint + voice waves */}
+        <div className="flex flex-col items-center gap-2">
+          <svg width="64" height="64" viewBox="0 0 48 48" fill="none">
+            <path d="M24 4C16 4 10 10 10 18c0 5 2 8 4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 4c8 0 14 6 14 14 0 5-2 8-4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 8c-5.5 0-10 4.5-10 10 0 3.5 1.5 6 3 8" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 8c5.5 0 10 4.5 10 10 0 3.5-1.5 6-3 8" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 12c-3.5 0-6 2.5-6 6s1 4.5 2 6" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 12c3.5 0 6 2.5 6 6s-1 4.5-2 6" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 16c-1.5 0-2.5 1-2.5 2.5S23 21 24 22" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 16c1.5 0 2.5 1 2.5 2.5S25 21 24 22" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M16 36c0-3 3.5-5 8-5s8 2 8 5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M19 39c0-2 2.2-3.5 5-3.5s5 1.5 5 3.5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M22 42c0-1 0.9-1.5 2-1.5s2 0.5 2 1.5" stroke="#00E5FF" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-wide">
+            Flash <span className="text-blue-600">ID</span>
+          </h1>
+          <p className="text-slate-500 text-sm">Scan with your Flash ID app to log in</p>
         </div>
 
         {/* --- PENDING --- */}
         {status === 'pending' && !isCreating && (
           <div className="space-y-5">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900">Verify Your Identity</h2>
-              <p className="text-slate-500 text-sm">
-                Scan this QR code with your Flash ID app
-              </p>
-            </div>
 
             {/* Status indicator — always above the content */}
             <div className="flex items-center justify-center gap-2 text-slate-400">
