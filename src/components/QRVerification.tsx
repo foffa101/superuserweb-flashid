@@ -267,7 +267,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             ) : (
               <div className="flex flex-col items-center gap-4 py-6">
                 <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Fingerprint className="w-8 h-8 text-slate-400" />
+                  <CheckCircle className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="text-center space-y-1">
                   <h3 className="text-lg font-bold text-slate-900">Confirm on your phone</h3>
