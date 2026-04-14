@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firestore';
 import { createSession, subscribeToSession } from '../lib/sessions';
 import type { AuthSession } from '../lib/sessions';
 import { ChallengeDisplay } from './ChallengeDisplay';
@@ -26,7 +28,7 @@ interface QRVerificationProps {
 }
 
 export function QRVerification({ userId, onVerified, onCancel }: QRVerificationProps) {
-  const [, setSessionId] = useState<string | null>(null);
+  const [currentSessionId, setSessionId] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string>('');
   const [status, setStatus] = useState<AuthSession['status']>('pending');
   const [secondsLeft, setSecondsLeft] = useState(90);
@@ -39,6 +41,16 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleCancel = useCallback(() => {
+    // Deny the session in Firestore so the phone detects it
+    if (currentSessionId) {
+      updateDoc(doc(db, 'auth_sessions', currentSessionId), { status: 'denied' }).catch(() => {});
+    }
+    if (unsubRef.current) unsubRef.current();
+    if (timerRef.current) clearInterval(timerRef.current);
+    onCancel();
+  }, [currentSessionId, onCancel]);
   const qrTimeoutRef = useRef(90);
 
   const startSession = useCallback(async () => {
@@ -268,7 +280,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
             {/* Cancel */}
             <button
-              onClick={onCancel}
+              onClick={handleCancel}
               className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
             >
               Cancel
@@ -320,7 +332,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </button>
 
             <button
-              onClick={onCancel}
+              onClick={handleCancel}
               className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
             >
               Cancel
@@ -369,7 +381,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 Try Again
               </button>
               <button
-                onClick={onCancel}
+                onClick={handleCancel}
                 className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
               >
                 Cancel
@@ -396,7 +408,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
               Regenerate QR Code
             </button>
             <button
-              onClick={onCancel}
+              onClick={handleCancel}
               className="w-full py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
             >
               Cancel
