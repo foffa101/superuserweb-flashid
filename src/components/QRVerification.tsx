@@ -231,17 +231,13 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 {/* Biometric verification in progress on phone */}
                 <div className="flex flex-col items-center gap-4 py-6">
                   <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                    <span className="text-3xl">🖐️</span>
+                    <Fingerprint className="w-8 h-8 text-blue-600" />
                   </div>
                   <div className="text-center space-y-1">
                     <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
                     <p className="text-sm text-slate-500">Complete biometric verification on your Flash ID app</p>
                   </div>
-                  <div className="w-full bg-slate-50 rounded-xl p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <span className="text-sm">✓</span>
-                      <span className="text-sm font-medium">Challenge verification passed</span>
-                    </div>
+                  <div className="w-full bg-slate-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-blue-500">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span className="text-sm font-medium">Waiting for biometric verification...</span>
@@ -373,20 +369,12 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             <h2 className="text-2xl font-bold text-slate-900">Verification Denied</h2>
             <p className="text-slate-500 text-sm">The request was denied on your device.</p>
             {error && <p className="text-red-600 font-medium text-sm">{error}</p>}
-            <div className="flex gap-3">
-              <button
-                onClick={startSession}
-                className="flex-1 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={handleCancel}
-                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              onClick={handleCancel}
+              className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+            >
+              Cancel
+            </button>
           </div>
         )}
 
