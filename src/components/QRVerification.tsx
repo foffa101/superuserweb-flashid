@@ -188,61 +188,49 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
               </p>
             </div>
 
+            {/* Status indicator — always above the content */}
+            <div className="flex items-center justify-center gap-2 text-slate-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm font-medium">
+                {!scanned
+                  ? 'Waiting for verification...'
+                  : challengePassed
+                    ? 'Waiting for biometric verification...'
+                    : 'Verifying on Flash ID app...'}
+              </span>
+            </div>
+
             {/* QR Code — hidden after scan, replaced by challenge */}
             {!scanned ? (
-              <>
-                <div className="flex justify-center">
-                  <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
-                    {qrImageUrl && (
-                      <img
-                        src={qrImageUrl}
-                        alt="Verification QR Code"
-                        className="w-[280px] h-[280px] rounded-lg"
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100">
-                        <QrCode className="w-5 h-5 text-red-600" />
-                      </div>
+              <div className="flex justify-center">
+                <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
+                  {qrImageUrl && (
+                    <img
+                      src={qrImageUrl}
+                      alt="Verification QR Code"
+                      className="w-[280px] h-[280px] rounded-lg"
+                    />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100">
+                      <QrCode className="w-5 h-5 text-red-600" />
                     </div>
                   </div>
                 </div>
-
-                {/* Waiting indicator */}
-                <div className="flex items-center justify-center gap-2 text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm font-medium">Waiting for verification...</span>
-                </div>
-              </>
+              </div>
             ) : challengePassed ? (
-              <>
-                {/* Biometric verification in progress on phone */}
-                <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                    <Fingerprint className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <div className="text-center space-y-1">
-                    <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
-                    <p className="text-sm text-slate-500">Complete biometric verification on your Flash ID app</p>
-                  </div>
-                  <div className="w-full bg-slate-50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-blue-500">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span className="text-sm font-medium">Waiting for biometric verification...</span>
-                    </div>
-                  </div>
+              <div className="flex flex-col items-center gap-4 py-6">
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Fingerprint className="w-8 h-8 text-blue-600" />
                 </div>
-              </>
+                <div className="text-center space-y-1">
+                  <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
+                  <p className="text-sm text-slate-500">Complete biometric verification on your Flash ID app</p>
+                </div>
+              </div>
             ) : (
               <>
-                {/* Challenge display — shown after QR scan */}
                 {challengeData && <ChallengeDisplay challengeData={challengeData} />}
-
-                {/* Verifying indicator */}
-                <div className="flex items-center justify-center gap-2 text-blue-500">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm font-medium">Verifying on Flash ID app...</span>
-                </div>
               </>
             )}
 
