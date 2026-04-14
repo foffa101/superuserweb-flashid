@@ -42,11 +42,16 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleCancel = useCallback(() => {
-    // Deny the session in Firestore so the phone detects it
+  const denyCurrentSession = useCallback(() => {
+    // Defensive: marks the current Firestore doc denied before we abandon it.
+    // Phone's snapshot listener sees the flip and exits any stuck challenge screen.
     if (currentSessionId) {
       updateDoc(doc(db, 'auth_sessions', currentSessionId), { status: 'denied' }).catch(() => {});
     }
+  }, [currentSessionId]);
+
+  const handleCancel = useCallback(() => {
+    denyCurrentSession();
     if (unsubRef.current) unsubRef.current();
     if (timerRef.current) clearInterval(timerRef.current);
     onCancel();
@@ -228,7 +233,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                       : challengeRequired && !challengePassed
                         ? 'Verifying Challenge on App...'
                         : biometricsRequired
-                          ? 'Waiting for biometric verification...'
+                          ? 'Waiting for biometrics...'
                           : 'Waiting for confirmation...'}
                   </span>
                 </div>
@@ -367,7 +372,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             <h2 className="text-2xl font-bold text-slate-900">Session Expired</h2>
             <p className="text-slate-500 text-sm">The QR code has expired. Generate a new one to continue.</p>
             <button
-              onClick={startSession}
+              onClick={() => { denyCurrentSession(); startSession(); }}
               disabled={cooldown}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -399,7 +404,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </div>
             <p className="text-red-600 font-medium text-sm">{error}</p>
             <button
-              onClick={startSession}
+              onClick={() => { denyCurrentSession(); startSession(); }}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all"
             >
               Retry
