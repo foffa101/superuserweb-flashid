@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Fingerprint } from 'lucide-react';
+import { Fingerprint, ShieldCheck, Lock } from 'lucide-react';
 import { signInWithGoogle } from '../lib/firebase';
 
 export default function Login() {
@@ -31,10 +31,11 @@ export default function Login() {
             <p className="text-sm text-slate-500 mt-1">Internal platform management</p>
           </div>
 
+          <div className="flex justify-center">
           <button
             onClick={handleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-gray-200 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2.5 rounded-full px-7 py-[13px] text-base font-semibold text-gray-200 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             style={{
               background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -42,7 +43,7 @@ export default function Login() {
               letterSpacing: '0.5px',
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
               <path d="M24 4C16 4 10 10 10 18c0 5 2 8 4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
               <path d="M24 4c8 0 14 6 14 14 0 5-2 8-4 10.5" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
               <path d="M24 8c-5.5 0-10 4.5-10 10 0 3.5 1.5 6 3 8" stroke="#E040FB" strokeWidth="1.8" strokeLinecap="round" />
@@ -57,6 +58,7 @@ export default function Login() {
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Flash ID'}
           </button>
+          </div>
 
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -65,8 +67,18 @@ export default function Login() {
           )}
         </div>
 
+        {/* Secure / Encrypted trust pills */}
+        <div className="pt-4 flex items-center justify-center gap-4">
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+            <ShieldCheck className="w-4 h-4" /> Secure
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
+            <Lock className="w-4 h-4" /> Encrypted
+          </div>
+        </div>
+
         {/* Don't have the app? */}
-        <div className="mt-4 space-y-4">
+        <div className="mt-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
             <span className="text-slate-400 text-xs font-medium whitespace-nowrap">Don't have the app?</span>
