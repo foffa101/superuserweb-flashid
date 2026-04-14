@@ -202,7 +202,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 ? 'Complete the following Challenge Verification'
                 : biometricsRequired
                   ? 'Complete Biometrics Verification on App'
-                  : 'Confirm on your Flash ID app'}
+                  : 'Confirm in your Flash ID app'}
           </p>
         </div>
 
@@ -226,7 +226,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                         ? 'Verifying Challenge on App...'
                         : biometricsRequired
                           ? 'Waiting for biometric verification...'
-                          : 'Waiting for approval...'}
+                          : 'Waiting for confirmation...'}
                   </span>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                   <CheckCircle className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="text-center space-y-1">
-                  <h3 className="text-lg font-bold text-slate-900">Confirm on your phone</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Quick Confirm</h3>
                   <p className="text-sm text-slate-500">Tap approve in the Flash ID app to continue</p>
                 </div>
               </div>
