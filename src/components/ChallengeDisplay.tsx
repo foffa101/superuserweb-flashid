@@ -17,14 +17,15 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
   if (!method) return null;
 
   return (
-    <div className="mt-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 text-center">
+    <div className="flex justify-center">
+    <div className="w-[280px] min-h-[280px] flex flex-col items-center justify-center bg-white border-2 border-slate-100 rounded-2xl shadow-lg p-6 text-center">
       {/* OTP methods */}
       {(method === 'type_code' || method === 'select_code') && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             {method === 'type_code' ? 'Enter this code in the app' : 'Select this code in the app'}
           </p>
-          <p className="text-3xl font-bold text-white tracking-[8px] font-mono">
+          <p className="text-3xl font-bold text-slate-900 tracking-[8px] font-mono">
             {cd.code}
           </p>
         </>
@@ -33,10 +34,10 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Voice phrase */}
       {method === 'voice_phrase' && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Read this phrase aloud in the app
           </p>
-          <p className="text-lg font-medium text-slate-200 italic">
+          <p className="text-lg font-medium text-slate-800 italic">
             "{cd.phrase}"
           </p>
         </>
@@ -45,12 +46,12 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Visual match methods — show 1 target item */}
       {['emoji_match', 'word_match', 'icon_match', 'flag_match', 'shape_match'].includes(method) && cd.target && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Find this on the app
           </p>
           <div className="flex justify-center">
-            <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4 inline-flex items-center justify-center">
-              <span className={method === 'word_match' ? 'text-lg font-semibold text-white' : 'text-5xl'}>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-6 py-4 inline-flex items-center justify-center">
+              <span className={method === 'word_match' ? 'text-lg font-semibold text-slate-900' : 'text-5xl'}>
                 {cd.target}
               </span>
             </div>
@@ -61,12 +62,12 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Color match — show 1 target color */}
       {method === 'color_match' && cd.target && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Find this color on the app
           </p>
           <div className="flex justify-center">
             <div
-              className="w-16 h-16 rounded-xl border-2 border-white/20"
+              className="w-16 h-16 rounded-xl border-2 border-slate-200"
               style={{ background: COLOR_MAP[cd.target] || '#94A3B8' }}
             />
           </div>
@@ -76,14 +77,14 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Number sequence — keeps grid display */}
       {method === 'number_sequence' && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Tap the numbers in order on the app
           </p>
           <div className="grid grid-cols-3 gap-1.5 max-w-[220px] mx-auto">
             {cd.grid?.map((item, i) => (
               <div
                 key={i}
-                className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center justify-center min-h-[44px] text-2xl"
+                className="bg-slate-50 border border-slate-200 rounded-lg p-2 flex items-center justify-center min-h-[44px] text-2xl"
               >
                 {item}
               </div>
@@ -95,7 +96,7 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Draw match */}
       {method === 'draw_match' && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Draw this shape in the app
           </p>
           <p className="text-base font-semibold text-blue-400 capitalize">
@@ -106,14 +107,14 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
 
       {/* Tap pattern */}
       {method === 'tap_pattern' && (
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
           Watch the pattern in the app and repeat it
         </p>
       )}
 
       {/* Shake verify */}
       {method === 'shake_verify' && (
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
           Shake your phone to verify
         </p>
       )}
@@ -121,7 +122,7 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       {/* Animal sound — play button on site, selection on app */}
       {method === 'animal_sound' && cd.sound_id && (
         <>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
             Play the sound — select the animal on the app
           </p>
           <button
@@ -147,6 +148,7 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
           <p className="text-[10px] text-slate-500 mt-2">The user selects the matching animal on their phone</p>
         </>
       )}
+    </div>
     </div>
   );
 }
