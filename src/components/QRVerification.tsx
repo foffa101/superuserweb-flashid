@@ -38,6 +38,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [scanned, setScanned] = useState(false);
   const [challengePassed, setChallengePassed] = useState(false);
   const [downloadView, setDownloadView] = useState<DownloadView>('none');
+  const [cooldown, setCooldown] = useState(false);
+  const [honeypotValue, setHoneypotValue] = useState('');
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,13 +56,24 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const qrTimeoutRef = useRef(90);
 
   const startSession = useCallback(async () => {
+    // Honeypot check — if filled by bot, silently bail
+    if (honeypotValue) return;
+
     unsubRef.current?.();
     if (timerRef.current) clearInterval(timerRef.current);
 
+    // Full state reset (prevents stale data from previous session)
     setIsCreating(true);
     setError(null);
     setStatus('pending');
     setDownloadView('none');
+    setScanned(false);
+    setChallengePassed(false);
+    setChallengeData(null);
+
+    // Rate limit — cooldown prevents rapid session spam
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), 3000);
 
     try {
       const biometrics = {
@@ -100,6 +113,13 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         if (session.challenge_data) setChallengeData(session.challenge_data);
         if (session.scanned || session.uid || session.challenge_response) setScanned(true);
         if (session.challenge_passed) setChallengePassed(true);
+
+        // Server-side expiry sync — keep client timer aligned with Firestore truth
+        if (session.expiresAt) {
+          const serverRemaining = Math.max(0, Math.floor((new Date(session.expiresAt).getTime() - Date.now()) / 1000));
+          setSecondsLeft((prev) => Math.min(prev, serverRemaining));
+        }
+
         if (session.status === 'approved') {
           if (session.uid && session.uid !== userId) {
             setError('Verification failed: approver identity mismatch. Please try again with the correct account.');
@@ -128,6 +148,17 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [startSession]);
+
+  // Clean up session on tab close — mark as denied so phone stops waiting
+  useEffect(() => {
+    const cleanup = () => {
+      if (currentSessionId && status === 'pending') {
+        updateDoc(doc(db, 'auth_sessions', currentSessionId), { status: 'denied' }).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', cleanup);
+    return () => window.removeEventListener('beforeunload', cleanup);
+  }, [currentSessionId, status]);
 
   // Auto-redirect on approval
   useEffect(() => {
@@ -321,7 +352,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 setDownloadView('none');
                 startSession();
               }}
-              className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg"
+              disabled={cooldown}
+              className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw className="w-5 h-5" />
               I have the app — Log in
@@ -390,7 +422,8 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             <p className="text-slate-500 text-sm">The QR code has expired. Generate a new one to continue.</p>
             <button
               onClick={startSession}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg"
+              disabled={cooldown}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw className="w-5 h-5" />
               Regenerate QR Code
@@ -403,6 +436,12 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </button>
           </div>
         )}
+
+        {/* Honeypot — hidden from humans, filled by bots */}
+        <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+          <label htmlFor="fid_website">Website</label>
+          <input type="text" id="fid_website" name="fid_website" tabIndex={-1} autoComplete="off" value={honeypotValue} onChange={(e) => setHoneypotValue(e.target.value)} />
+        </div>
 
         {/* --- ERROR (standalone) --- */}
         {error && status !== 'denied' && (

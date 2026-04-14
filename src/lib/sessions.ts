@@ -25,6 +25,7 @@ export interface AuthSession {
   challenge_data?: ChallengeData;
   challenge_response?: Record<string, unknown>;
   scanned?: boolean; // Set by the app when QR is scanned
+  scannedBy?: string; // Device fingerprint for replay prevention
   challenge_passed?: boolean; // Set by the app when challenge succeeds
 }
 
