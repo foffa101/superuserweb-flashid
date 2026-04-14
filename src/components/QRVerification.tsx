@@ -34,6 +34,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [error, setError] = useState<string | null>(null);
   const [challengeData, setChallengeData] = useState<ChallengeData | null>(null);
   const [scanned, setScanned] = useState(false);
+  const [challengePassed, setChallengePassed] = useState(false);
   const [downloadView, setDownloadView] = useState<DownloadView>('none');
 
   const unsubRef = useRef<(() => void) | null>(null);
@@ -86,6 +87,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         if (!session) return;
         if (session.challenge_data) setChallengeData(session.challenge_data);
         if (session.scanned || session.uid || session.challenge_response) setScanned(true);
+        if (session.challenge_passed) setChallengePassed(true);
         if (session.status === 'approved') {
           if (session.uid && session.uid !== userId) {
             setError('Verification failed: approver identity mismatch. Please try again with the correct account.');
@@ -210,6 +212,29 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 <div className="flex items-center justify-center gap-2 text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm font-medium">Waiting for verification...</span>
+                </div>
+              </>
+            ) : challengePassed ? (
+              <>
+                {/* Biometric verification in progress on phone */}
+                <div className="flex flex-col items-center gap-4 py-6">
+                  <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                    <span className="text-3xl">🖐️</span>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
+                    <p className="text-sm text-slate-500">Complete biometric verification on your Flash ID app</p>
+                  </div>
+                  <div className="w-full bg-slate-50 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <span className="text-sm">✓</span>
+                      <span className="text-sm font-medium">Challenge verification passed</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span className="text-sm font-medium">Waiting for biometric verification...</span>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
