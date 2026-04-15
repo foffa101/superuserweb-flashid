@@ -4,6 +4,7 @@ import { db } from '../lib/firestore';
 import { createSession, subscribeToSession } from '../lib/sessions';
 import type { AuthSession } from '../lib/sessions';
 import { ChallengeDisplay } from './ChallengeDisplay';
+import { DataSharingNotice } from './DataSharingNotice';
 import type { ChallengeData } from '../lib/challenges';
 import {
   QrCode,
@@ -38,6 +39,10 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [honeypotValue, setHoneypotValue] = useState('');
   const [biometricsRequired, setBiometricsRequired] = useState(false);
   const [challengeRequired, setChallengeRequired] = useState(false);
+  // Set to true while the phone is on the first-time Authorize screen so the
+  // browser can show the Data Sharing Notice in place of the QR. Cleared when
+  // the phone flips pairingStatus to 'approved' (or the session terminates).
+  const [pairingAwaiting, setPairingAwaiting] = useState(false);
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -74,6 +79,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
     setChallengeData(null);
     setBiometricsRequired(false);
     setChallengeRequired(false);
+    setPairingAwaiting(false);
 
     // Rate limit — cooldown prevents rapid session spam
     setCooldown(true);
@@ -87,7 +93,10 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
       };
       let verificationMethod: string | undefined;
       try {
-        const methods = JSON.parse(localStorage.getItem('superadmin-verification-methods') || '{}');
+        // Match Settings.tsx default: type_code for fresh browsers so we don't
+        // silently fall through to the broken voice_phrase legacy value.
+        const raw = localStorage.getItem('superadmin-verification-methods') || '{"type_code":true}';
+        const methods = JSON.parse(raw);
         const enabled = Object.keys(methods).filter(k => methods[k]);
         if (enabled.length > 0) {
           verificationMethod = enabled.length === 1 ? enabled[0] : enabled[Math.floor(Math.random() * enabled.length)];
@@ -119,11 +128,19 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         setBiometricsRequired(!!session.biometricsRequired);
         if (session.scanned || session.uid || session.challenge_response) setScanned(true);
         if (session.challenge_passed) setChallengePassed(true);
+        setPairingAwaiting(session.pairingStatus === 'awaiting_approval');
 
-        // Server-side expiry sync — keep client timer aligned with Firestore truth
+        // Server-side expiry sync — keep client timer aligned with Firestore truth.
+        // Normally only shrinks (Math.min), but when the phone extends TTL for a
+        // first-time pairing the server grows expiresAt; in that case trust the
+        // server value so the on-screen countdown doesn't underrun the notice.
         if (session.expiresAt) {
           const serverRemaining = Math.max(0, Math.floor((new Date(session.expiresAt).getTime() - Date.now()) / 1000));
-          setSecondsLeft((prev) => Math.min(prev, serverRemaining));
+          if (session.pairingStatus === 'awaiting_approval') {
+            setSecondsLeft(serverRemaining);
+          } else {
+            setSecondsLeft((prev) => Math.min(prev, serverRemaining));
+          }
         }
 
         if (session.status === 'approved') {
@@ -180,6 +197,19 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
   const progress = secondsLeft / qrTimeoutRef.current;
 
+  /**
+   * Countdown color reacts to time pressure. Dark green reads as "plenty of
+   * time"; by red the user should already be moving. Percentage-based so it
+   * works for both 90s (returning) and 150s (first-time pairing) TTLs.
+   */
+  const countdownColor = (() => {
+    const pct = (secondsLeft / (qrTimeoutRef.current || 90)) * 100;
+    if (pct > 60) return 'text-green-700';
+    if (pct > 30) return 'text-yellow-500';
+    if (pct > 10) return 'text-orange-500';
+    return 'text-red-600';
+  })();
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center space-y-6">
@@ -204,11 +234,13 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
           <p className="text-slate-500 text-base">
             {status === 'denied' && challengeRequired && !challengePassed
               ? 'Challenge Verification Incomplete'
-              : !scanned
-                ? 'Scan with your Flash ID app to log in'
-                : challengeRequired && !challengePassed
-                  ? 'Complete the following Challenge Verification'
-                  : biometricsRequired
+              : pairingAwaiting
+                ? 'Review and approve on your phone'
+                : !scanned
+                  ? 'Scan with your Flash ID app to log in'
+                  : challengeRequired && !challengePassed
+                    ? 'Complete the following Challenge Verification'
+                    : biometricsRequired
                     ? 'Complete Biometrics Verification on App'
                     : 'Confirm in your Flash ID app'}
           </p>
@@ -228,20 +260,24 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
                 <div className="relative z-10 flex items-center justify-center gap-2 h-full text-slate-700">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span className="text-base font-medium">
-                    {!scanned
-                      ? 'Waiting for Scan...'
-                      : challengeRequired && !challengePassed
-                        ? 'Verifying Challenge on App...'
-                        : biometricsRequired
-                          ? 'Waiting for biometrics...'
-                          : 'Waiting for confirmation...'}
+                    {pairingAwaiting
+                      ? 'Waiting for approval on your phone...'
+                      : !scanned
+                        ? 'Waiting for Scan...'
+                        : challengeRequired && !challengePassed
+                          ? 'Verifying Challenge on App...'
+                          : biometricsRequired
+                            ? 'Waiting for biometrics...'
+                            : 'Waiting for confirmation...'}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* QR Code — hidden after scan, replaced by challenge */}
-            {!scanned ? (
+            {pairingAwaiting ? (
+              <DataSharingNotice siteName="Flash ID Super Admin Portal" />
+            ) : !scanned ? (
               <div className="flex justify-center">
                 <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
                   {qrImageUrl && (
@@ -264,12 +300,25 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
               </>
             ) : biometricsRequired ? (
               <div className="flex flex-col items-center gap-4 py-6">
-                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Fingerprint className="w-8 h-8 text-slate-400" />
+                <div className="w-28 h-28 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Fingerprint className="w-14 h-14 text-slate-400" />
                 </div>
                 <div className="text-center space-y-1">
                   <h3 className="text-lg font-bold text-slate-900">Biometric Verification</h3>
-                  <p className="text-sm text-slate-500">Complete biometric verification on your Flash ID app</p>
+                </div>
+              </div>
+            ) : challengeRequired && challengePassed ? (
+              // Challenge just passed, biometrics off — bridge state between
+              // "verifying challenge" and final approval. Without this the UI
+              // briefly falls through to the generic Quick Confirm card, which
+              // reads as "user hasn't done anything yet" and is confusing.
+              <div className="flex flex-col items-center gap-4 py-6">
+                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <div className="text-center space-y-1">
+                  <h3 className="text-lg font-bold text-slate-900">Challenge Verified</h3>
+                  <p className="text-sm text-slate-500">Finalizing approval on your phone...</p>
                 </div>
               </div>
             ) : (
@@ -288,7 +337,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             <div className="flex items-center justify-center gap-2 text-slate-500">
               <Clock className="w-4 h-4" />
               <span className="text-base font-medium">
-                Expires in <span className="font-bold text-slate-900">{secondsLeft}s</span>
+                Expires in <span className={`font-bold ${countdownColor}`}>{secondsLeft} s</span>
               </span>
             </div>
 

@@ -230,9 +230,15 @@ export default function Settings({ user }: SettingsProps) {
     saveWhitelist(whitelistEmails.filter(e => e !== email));
   };
 
-  // Challenge methods (single-select)
+  // Challenge methods (single-select).
+  // Default to type_code (6-digit OTP) for fresh / cleared browsers — voice_phrase
+  // is not stable enough yet for first-time users to land on it.
   const [enabledMethods, setEnabledMethods] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem('superadmin-verification-methods') || '{}'); } catch { return {}; }
+    try {
+      const raw = localStorage.getItem('superadmin-verification-methods');
+      if (raw) return JSON.parse(raw);
+    } catch { /* fall through */ }
+    return { type_code: true };
   });
   const selectMethod = (key: string) => setEnabledMethods({ [key]: true });
   const clearMethod = () => setEnabledMethods({});

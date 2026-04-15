@@ -28,6 +28,10 @@ export interface AuthSession {
   scannedBy?: string; // Device fingerprint for replay prevention
   challenge_passed?: boolean; // Set by the app when challenge succeeds
   biometricsRequired?: boolean; // True if any biometric (face/fingerprint/voice) is required
+  // First-time pairing gate. Set to 'awaiting_approval' by the phone while
+  // the user is on the ApprovalScreen reading the data-sharing disclosure;
+  // flipped to 'approved' once they accept. Absent for returning users.
+  pairingStatus?: 'awaiting_approval' | 'approved';
 }
 
 /** Generate a random hex string of the given byte-length (default 16 -> 32 hex chars). */
