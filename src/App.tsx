@@ -13,6 +13,7 @@ import Security from './pages/Security';
 import Events from './pages/Events';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
+import ConsentLog from './pages/ConsentLog';
 import Documentation from './pages/Documentation';
 
 type AccessStatus = 'checking' | 'granted' | 'denied';
@@ -199,6 +200,7 @@ export default function App() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/security" element={<Security />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/consent-log" element={<ConsentLog />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/settings" element={<Settings user={user!} />} />
         </Route>
