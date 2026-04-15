@@ -116,10 +116,13 @@ function generateGridMatch(pool: string[], method: string): ChallengeData {
 }
 
 function generateNumberSequence(): ChallengeData {
-  const numbers = shuffle([1,2,3,4,5,6,7,8,9]);
-  const grid = numbers.map(String);
-  const indices = pickN([0,1,2,3,4,5,6,7,8], 3).sort((a,b) => a-b);
-  return { method: 'number_sequence', grid, sequence: indices };
+  // 4 digits drawn without replacement from 1-9. Phone shows a fixed 3x3
+  // keypad (1-9 in sorted order) so the values in `sequence` are the actual
+  // digits to tap — no longer indices into a shuffled grid. Portal plays
+  // them back one at a time with a Replay button; phone validates each
+  // tap locally as the user enters them.
+  const sequence = pickN([1,2,3,4,5,6,7,8,9], 4);
+  return { method: 'number_sequence', sequence };
 }
 
 function generateTypeCode(): ChallengeData {

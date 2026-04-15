@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { Play, Pause } from 'lucide-react';
 import type { ChallengeData } from '../lib/challenges';
 
 const COLOR_MAP: Record<string, string> = {
@@ -74,23 +76,9 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
         </>
       )}
 
-      {/* Number sequence — keeps grid display */}
+      {/* Number sequence — autoplay one digit at a time with Replay button */}
       {method === 'number_sequence' && (
-        <>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
-            Tap the numbers in order on the app
-          </p>
-          <div className="grid grid-cols-3 gap-1.5 max-w-[220px] mx-auto">
-            {cd.grid?.map((item, i) => (
-              <div
-                key={i}
-                className="bg-slate-50 border border-slate-200 rounded-lg p-2 flex items-center justify-center min-h-[44px] text-2xl"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </>
+        <NumberSequencePlayer sequence={cd.sequence ?? []} />
       )}
 
       {/* Draw match */}
@@ -150,5 +138,87 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
       )}
     </div>
     </div>
+  );
+}
+
+/**
+ * Plays a digit sequence one at a time. Each digit shows for ~1.2s,
+ * then advances. After the last digit, a "Replay" button appears so the
+ * user can restart the playback if they missed one. The phone validates
+ * each tap against the same sequence locally — this component is purely
+ * the visual cue, not the source of truth.
+ *
+ * No real-time sync with the phone — the user can tap whenever as long
+ * as they get the digits in the right order.
+ */
+function NumberSequencePlayer({ sequence }: { sequence: number[] }) {
+  const total = sequence.length;
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!playing) return;
+    if (index >= total) {
+      setPlaying(false);
+      return;
+    }
+    const t = setTimeout(() => setIndex((i) => i + 1), 1200);
+    return () => clearTimeout(t);
+  }, [playing, index, total]);
+
+  const replay = () => {
+    setIndex(0);
+    setPlaying(true);
+  };
+
+  if (total === 0) return null;
+  const showing = playing && index < total;
+  const currentDigit = showing ? sequence[index] : null;
+  const finished = !playing && index >= total;
+
+  return (
+    <>
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
+        Tap each number on your phone as it appears
+      </p>
+      <div
+        className={`w-32 h-32 mx-auto rounded-2xl flex items-center justify-center text-6xl font-bold transition-all ${
+          showing
+            ? 'bg-blue-50 border-2 border-blue-300 text-blue-700 scale-100'
+            : 'bg-slate-50 border-2 border-slate-200 text-slate-300 scale-95'
+        }`}
+      >
+        {currentDigit ?? '·'}
+      </div>
+      <div className="flex items-center justify-center gap-1.5 mt-4">
+        {sequence.map((_, i) => (
+          <span
+            key={i}
+            className={`w-2 h-2 rounded-full transition-colors ${
+              i < index ? 'bg-blue-500' : i === index && showing ? 'bg-blue-300' : 'bg-slate-200'
+            }`}
+          />
+        ))}
+      </div>
+      <div className="mt-3 text-xs text-slate-500">
+        {showing ? `${index + 1} / ${total}` : finished ? `Done — ${total} digits shown` : 'Get ready...'}
+      </div>
+      {finished && (
+        <button
+          onClick={replay}
+          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+        >
+          <Play className="w-3 h-3" /> Replay
+        </button>
+      )}
+      {playing && index < total && (
+        <button
+          onClick={() => setPlaying(false)}
+          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+        >
+          <Pause className="w-3 h-3" /> Pause
+        </button>
+      )}
+    </>
   );
 }
