@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
-  ChevronDown, ChevronUp, ShieldCheck,
+  ChevronDown, ChevronUp, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import { useFieldAgentGuard } from '../components/FieldAgentGuard';
@@ -498,25 +498,47 @@ export default function Tenants() {
           </div>
 
           {/* Admin Portal Access */}
-          {formData.email && (
-            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={adminWhitelist.includes((formData.email || '').toLowerCase())}
-                  onChange={(e) => toggleAdminAccess(formData.email || '', e.target.checked)}
-                  className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 accent-red-600"
-                />
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-indigo-500" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Create Admin Portal</p>
-                    <p className="text-xs text-slate-400">Grant <span className="font-medium text-slate-600">{formData.email}</span> access to the Admin Portal (flashid-admin.web.app)</p>
+          {formData.email && (() => {
+            const isWpStandard = formData.plan === 'WP - Standard';
+            const isChecked = adminWhitelist.includes((formData.email || '').toLowerCase());
+            return (
+              <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <label
+                  className={`flex items-center gap-3 ${isWpStandard ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                  onClick={(e) => {
+                    if (isWpStandard) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked && !isWpStandard}
+                    disabled={isWpStandard}
+                    onChange={(e) => {
+                      if (!isWpStandard) toggleAdminAccess(formData.email || '', e.target.checked);
+                    }}
+                    className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 accent-red-600"
+                  />
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className={`h-5 w-5 ${isWpStandard ? 'text-slate-400' : 'text-indigo-500'}`} />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Create Admin Portal</p>
+                      <p className="text-xs text-slate-400">Grant <span className="font-medium text-slate-600">{formData.email}</span> access to the Admin Portal (flashid-admin.web.app)</p>
+                    </div>
                   </div>
-                </div>
-              </label>
-            </div>
-          )}
+                </label>
+                {isWpStandard && (
+                  <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800">
+                      Administrator Portals are not available for WP Standard plans. Standard plans are governed from within the WordPress environment. Change the plan to WP Agency or an API plan to enable portal access.
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Approval overlays */}
           {addTenantGuard.status !== 'idle' && addTenantGuard.status !== 'checking' && <ApprovalOverlay status={addTenantGuard.status} onCancel={addTenantGuard.reset} />}
