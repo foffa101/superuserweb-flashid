@@ -114,6 +114,7 @@ export function subscribeToSession(
       callback(data || null);
     },
     (error: any) => {
+      if (error?.code === 'permission-denied') return;
       console.error('Session snapshot error:', error);
     }
   );
