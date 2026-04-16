@@ -2,6 +2,39 @@ import { useEffect, useState } from 'react';
 import { Play, Pause } from 'lucide-react';
 import type { ChallengeData } from '../lib/challenges';
 
+/**
+ * Plays the onomatopoeia sound for an animal using speech synthesis.
+ * Says the animal sound (woof, meow, moo) not the animal name.
+ */
+function playAnimalSound(soundId: string) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const sounds: Record<string, string> = {
+    dog: 'woof woof woof',
+    cat: 'meow meow',
+    cow: 'moo moo',
+    lion: 'roar',
+    bird: 'tweet tweet tweet',
+    frog: 'ribbit ribbit ribbit',
+    horse: 'neigh',
+    elephant: 'pawoo',
+    monkey: 'ooh ooh ah ah',
+    pig: 'oink oink oink',
+    duck: 'quack quack quack',
+    wolf: 'awoo',
+    rooster: 'cock a doodle doo',
+    owl: 'hoo hoo',
+    bear: 'growl',
+  };
+  const text = sounds[soundId] || soundId;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.8;
+  utterance.pitch = soundId === 'bird' || soundId === 'monkey' ? 1.5 :
+                    soundId === 'bear' || soundId === 'lion' || soundId === 'cow' ? 0.5 :
+                    soundId === 'elephant' ? 0.4 : 1.0;
+  window.speechSynthesis.speak(utterance);
+}
+
 const COLOR_MAP: Record<string, string> = {
   red: '#EF4444', blue: '#3B82F6', green: '#22C55E', yellow: '#EAB308',
   purple: '#A855F7', orange: '#F97316', pink: '#EC4899', cyan: '#06B6D4',
@@ -116,17 +149,7 @@ export function ChallengeDisplay({ challengeData: cd }: ChallengeDisplayProps) {
           <button
             type="button"
             onClick={() => {
-              if ('speechSynthesis' in window) {
-                const names: Record<string, string> = {
-                  dog: 'Dog', cat: 'Cat', cow: 'Cow', lion: 'Lion', bird: 'Bird',
-                  frog: 'Frog', horse: 'Horse', elephant: 'Elephant', monkey: 'Monkey',
-                  pig: 'Pig', duck: 'Duck', wolf: 'Wolf', rooster: 'Rooster', owl: 'Owl', bear: 'Bear',
-                };
-                const name = names[cd.sound_id!] || cd.sound_id;
-                const utterance = new SpeechSynthesisUtterance(`The ${name} says`);
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
-              }
+              playAnimalSound(cd.sound_id!);
             }}
             className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
           >
