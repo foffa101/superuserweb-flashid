@@ -15,6 +15,7 @@ import {
   Loader2,
   RefreshCw,
   Fingerprint,
+  WifiOff,
 } from 'lucide-react';
 
 
@@ -43,6 +44,19 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   // browser can show the Data Sharing Notice in place of the QR. Cleared when
   // the phone flips pairingStatus to 'approved' (or the session terminates).
   const [pairingAwaiting, setPairingAwaiting] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Track online/offline status
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
 
   const unsubRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -213,6 +227,13 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center space-y-6">
+        {/* Offline banner */}
+        {isOffline && (
+          <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm">
+            <WifiOff className="w-4 h-4 flex-shrink-0" />
+            <span>You're offline — verification will resume when connected</span>
+          </div>
+        )}
         {/* Flash ID logo — colorful fingerprint + voice waves */}
         <div className="flex flex-col items-center gap-2">
           <svg width="64" height="64" viewBox="0 0 48 48" fill="none">

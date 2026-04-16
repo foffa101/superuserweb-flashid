@@ -115,6 +115,10 @@ export function subscribeToSession(
     },
     (error: any) => {
       if (error?.code === 'permission-denied') return;
+      if (error?.code === 'unavailable' || error?.code === 'failed-precondition' || !navigator.onLine) {
+        console.warn('[Flash ID] Connection lost — QR verification will resume when back online.');
+        return;
+      }
       console.error('Session snapshot error:', error);
     }
   );
