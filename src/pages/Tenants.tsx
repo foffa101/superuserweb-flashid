@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
-  ChevronDown, ChevronUp, ShieldCheck, AlertTriangle,
+  ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, Lock,
 } from 'lucide-react';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import { useFieldAgentGuard } from '../components/FieldAgentGuard';
@@ -181,6 +181,11 @@ export default function Tenants() {
 
   const saveForm = async () => {
     if (!formData.name || !formData.email) return;
+    // WP tenants require at least a primary domain
+    if ((formData.type === 'wp') && (!formData.licensedSites || formData.licensedSites.length === 0 || !formData.licensedSites[0]?.trim())) {
+      alert('Primary domain is required for WordPress tenants.');
+      return;
+    }
     if (isEditing && formData.id) {
       setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
       try {
@@ -397,9 +402,50 @@ export default function Tenants() {
                 />
               </div>
 
-              {/* Licensed sites */}
+              {/* Primary Domain — required, read-only after creation */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Licensed Sites</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Primary Domain <span className="text-red-500">*</span>
+                </label>
+                {isEditing && (formData.licensedSites || []).length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 font-mono">
+                      {(formData.licensedSites || [])[0]}
+                    </span>
+                    <Lock className="h-4 w-4 text-slate-400" />
+                  </div>
+                ) : !isEditing ? (
+                  <input
+                    type="text"
+                    value={(formData.licensedSites || [])[0] || newSite}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewSite(val);
+                      setFormData((p) => ({ ...p, licensedSites: [val, ...(p.licensedSites || []).slice(1)] }));
+                    }}
+                    placeholder="example.com"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={newSite}
+                    onChange={(e) => {
+                      setNewSite(e.target.value);
+                      setFormData((p) => ({ ...p, licensedSites: [e.target.value] }));
+                    }}
+                    placeholder="example.com"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                )}
+                <p className="text-xs text-slate-400 mt-1">The primary domain is set once and shown as read-only in the Admin Portal</p>
+              </div>
+
+              {/* Additional licensed sites (Agency only) */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Additional Domains</label>
                 <div className="space-y-2">
                   {(formData.licensedSites || []).map((site, i) => (
                     <div key={i} className="flex items-center gap-2">
