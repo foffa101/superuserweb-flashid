@@ -122,6 +122,52 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
+    // --- Agent Approvals (KYA + KYC) ---
+
+    // Tenant admins — maps admin UIDs to tenants
+    // Read: tenant admin (own record) or superuser
+    // Write: backend only (Firebase Admin SDK bypasses rules)
+    match /tenant_admins/{docId} {
+      allow read: if isAuthenticated();
+    }
+
+    // Business agents — registered API agents per tenant
+    // Read: tenant admin whose tenantId matches, or superuser
+    // Write: backend only
+    match /agents/{agentId} {
+      allow read: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.token.tenantId
+        || request.auth.token.superadmin == true
+      );
+    }
+
+    // Connected customers — pairing between tenants and Flash ID users
+    // Read: tenant admin whose tenantId matches, OR the paired customer
+    // Write: backend only
+    match /connected_customers/{docId} {
+      allow read: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.token.tenantId
+        || resource.data.customerUid == request.auth.uid
+      );
+    }
+
+    // Agent approval requests — pending/approved/denied decisions
+    // Read: tenant admin whose tenantId matches, OR the customer whose UID matches
+    // Write: backend only
+    match /approvals/{approvalId} {
+      allow read: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.token.tenantId
+        || resource.data.customerUid == request.auth.uid
+      );
+    }
+
+    // Scope categories — superuser-owned seed data
+    // Read: any authenticated user
+    // Write: superuser only (via backend for POC)
+    match /scope_categories/{categoryId} {
+      allow read: if isAuthenticated();
+    }
+
     // Catch-all: deny everything not explicitly allowed above
     // Applies to: all apps — any collection not listed above is blocked
     match /{document=**} {

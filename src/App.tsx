@@ -15,6 +15,9 @@ import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import ConsentLog from './pages/ConsentLog';
 import Documentation from './pages/Documentation';
+import FieldAgents from './pages/agents/FieldAgents';
+import BusinessAgents from './pages/agents/BusinessAgents';
+import VerificationQueue from './pages/agents/VerificationQueue';
 
 type AccessStatus = 'checking' | 'granted' | 'denied';
 
@@ -198,6 +201,10 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/tenants" element={<Tenants />} />
           <Route path="/billing" element={<Billing />} />
+          <Route path="/agents/field" element={<FieldAgents />} />
+          <Route path="/agents/business" element={<BusinessAgents />} />
+          <Route path="/agents/verification" element={<VerificationQueue />} />
+          <Route path="/agents" element={<Navigate to="/agents/field" replace />} />
           <Route path="/security" element={<Security />} />
           <Route path="/events" element={<Events />} />
           <Route path="/consent-log" element={<ConsentLog />} />

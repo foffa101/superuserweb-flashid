@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Trash2, Save, CheckCircle } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Save, CheckCircle } from 'lucide-react';
 import { type User } from '../lib/firebase';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { app } from '../lib/firebase';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
-import { getFieldAgents, deleteFieldAgent, type FieldAgent } from '../lib/firestore';
 
 const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 
@@ -138,10 +137,6 @@ export default function Settings({ user }: SettingsProps) {
   }, []);
 
   useEffect(() => { loadWhitelist(); }, [loadWhitelist]);
-
-  // Field Agents
-  const [fieldAgents, setFieldAgents] = useState<FieldAgent[]>([]);
-  useEffect(() => { getFieldAgents().then(setFieldAgents); }, []);
 
   const saveWhitelist = async (emails: string[]) => {
     setWhitelistSaving(true);
@@ -493,59 +488,6 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which verification methods are required. "None" skips challenge verification entirely and "Random" selects one at random.</p>
-      </section>
-
-      {/* Field Agents */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Field Agents</h2>
-        <p className="text-xs text-slate-400 mb-4">Actions protected by Flash ID approval. Configure agents using the shield icon next to action buttons.</p>
-        {fieldAgents.length === 0 ? (
-          <p className="text-sm text-slate-400">No field agents configured yet.</p>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {fieldAgents.map((agent) => (
-              <div key={agent.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${agent.enabled ? 'bg-[#00F5D4]/10' : 'bg-slate-100'}`}>
-                    <Shield className={`h-4 w-4 ${agent.enabled ? 'text-[#00F5D4]' : 'text-slate-400'}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{agent.actionLabel}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-slate-400 capitalize">{agent.page?.replace(/_/g, ' ')}</p>
-                      {agent.scope && (
-                        <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-medium">{agent.scope}</span>
-                      )}
-                    </div>
-                    {agent.notifyEmails && agent.notifyEmails.length > 0 && (
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Notifies: {agent.notifyEmails.join(', ')}
-                      </p>
-                    )}
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Timeout: {agent.timeoutSeconds === 0 ? 'Does not expire' : agent.timeoutSeconds < 60 ? `${agent.timeoutSeconds}s` : agent.timeoutSeconds < 3600 ? `${Math.floor(agent.timeoutSeconds / 60)}m` : agent.timeoutSeconds < 86400 ? `${Math.floor(agent.timeoutSeconds / 3600)}h` : `${Math.floor(agent.timeoutSeconds / 86400)}d`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${agent.enabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {agent.enabled ? 'Active' : 'Paused'}
-                  </span>
-                  <button
-                    onClick={async () => {
-                      await deleteFieldAgent(agent.id);
-                      setFieldAgents((prev) => prev.filter((a) => a.id !== agent.id));
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                    title="Remove agent"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* Access Management */}

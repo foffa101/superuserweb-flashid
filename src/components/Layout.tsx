@@ -14,6 +14,9 @@ import {
   X,
   Fingerprint,
   ChevronDown,
+  Bot,
+  Shield,
+  ClipboardCheck,
 } from 'lucide-react';
 import { signOut, type User } from '../lib/firebase';
 import { useGlobalFilter, type GlobalFilter } from '../lib/FilterContext';
@@ -21,6 +24,11 @@ import { useGlobalFilter, type GlobalFilter } from '../lib/FilterContext';
 const allNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'Tenants', icon: Building2 },
+  { to: '/agents', label: 'Agents', icon: Bot, children: [
+    { to: '/agents/field', label: 'Field Agents', icon: Shield },
+    { to: '/agents/business', label: 'Business Agents', icon: Building2 },
+    { to: '/agents/verification', label: 'Verification Queue', icon: ClipboardCheck },
+  ]},
   { to: '/security', label: 'Security', icon: ShieldAlert },
   { to: '/events', label: 'Events', icon: ScrollText },
   { to: '/consent-log', label: 'Consent Log', icon: FileCheck2 },
@@ -36,6 +44,7 @@ interface LayoutProps {
 export default function Layout({ user }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const { filter, setFilter } = useGlobalFilter();
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +76,53 @@ export default function Layout({ user }: LayoutProps) {
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
+          const children = (item as any).children as typeof allNavItems | undefined;
           const isActive = location.pathname === item.to;
+          const isParentActive = children?.some((c) => location.pathname === c.to);
+          const isExpanded = expandedNav === item.to || isParentActive;
+
+          if (children) {
+            return (
+              <div key={item.to}>
+                <button
+                  onClick={() => setExpandedNav(isExpanded ? null : item.to)}
+                  className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full ${
+                    isParentActive
+                      ? 'bg-red-600/20 text-white'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+                {isExpanded && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {children.map((child) => {
+                      const isChildActive = location.pathname === child.to;
+                      return (
+                        <button
+                          key={child.to}
+                          onClick={() => { navigate(child.to); setSidebarOpen(false); }}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
+                            isChildActive
+                              ? 'bg-red-600 text-white'
+                              : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <child.icon className="h-4 w-4" />
+                          {child.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <button
               key={item.to}
