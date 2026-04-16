@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthChange, signOut, type User } from './lib/firebase';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
@@ -27,7 +27,6 @@ function ProtectedRoute({ user, children }: { user: User | null; children: React
 }
 
 export default function App() {
-  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
@@ -182,8 +181,6 @@ export default function App() {
           if (level === 'secure') sessionStorage.setItem('superadmin-qr-verified', '1');
           if (level === 'more-secure') localStorage.setItem('superadmin-qr-verified-at', String(Date.now()));
           setIsQrVerified(true);
-          const redirectPath = localStorage.getItem('superadmin-redirect-after-login') || '/dashboard';
-          navigate(redirectPath, { replace: true });
         }}
         onCancel={() => signOut()}
       />
@@ -193,7 +190,7 @@ export default function App() {
   return (
     <FilterProvider>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/login" element={user ? <Navigate to={localStorage.getItem('superadmin-redirect-after-login') || '/dashboard'} replace /> : <Login />} />
         <Route
           element={
             <ProtectedRoute user={user}>
@@ -214,7 +211,7 @@ export default function App() {
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/settings" element={<Settings user={user!} />} />
         </Route>
-        <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={user ? (localStorage.getItem('superadmin-redirect-after-login') || '/dashboard') : '/login'} replace />} />
       </Routes>
     </FilterProvider>
   );
