@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, CheckCircle, Clock, X } from 'lucide-react';
+import { Building2, Plus, CheckCircle, Clock, X, AlertTriangle } from 'lucide-react';
 import { getFirestore, collection, getDocs, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { app } from '../../lib/firebase';
 
@@ -27,6 +27,8 @@ export default function BusinessAgents() {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newCustomerType, setNewCustomerType] = useState<CustomerType>('wp_standard');
   const [newDomain, setNewDomain] = useState('');
+  const [enableAdminPortal, setEnableAdminPortal] = useState(false);
+  const [showStandardWarning, setShowStandardWarning] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const loadTenants = async () => {
@@ -64,26 +66,30 @@ export default function BusinessAgents() {
         createdBy: 'superuser',
       });
 
-      // 2. Add admin email to whitelist so they can access admin portal
-      const whitelistRef = doc(db, 'admin_config', 'whitelist');
-      const whitelistSnap = await getDoc(whitelistRef);
-      if (whitelistSnap.exists()) {
-        await setDoc(whitelistRef, { emails: arrayUnion(email) }, { merge: true });
-      } else {
-        await setDoc(whitelistRef, { emails: [email] });
-      }
+      // 2. Only grant admin portal access for WP Agency plans
+      if (enableAdminPortal && newCustomerType === 'wp_agency') {
+        // Add admin email to whitelist so they can access admin portal
+        const whitelistRef = doc(db, 'admin_config', 'whitelist');
+        const whitelistSnap = await getDoc(whitelistRef);
+        if (whitelistSnap.exists()) {
+          await setDoc(whitelistRef, { emails: arrayUnion(email) }, { merge: true });
+        } else {
+          await setDoc(whitelistRef, { emails: [email] });
+        }
 
-      // 3. Create tenant_admins record so admin portal can look up their tenantId
-      await setDoc(doc(db, 'tenant_admins', `${tenantId}_${email.replace(/[^a-z0-9]/g, '_')}`), {
-        email,
-        tenantId,
-      });
+        // Create tenant_admins record so admin portal can look up their tenantId
+        await setDoc(doc(db, 'tenant_admins', `${tenantId}_${email.replace(/[^a-z0-9]/g, '_')}`), {
+          email,
+          tenantId,
+        });
+      }
 
       setShowCreateModal(false);
       setNewTenantName('');
       setNewAdminEmail('');
       setNewDomain('');
       setNewCustomerType('wp_standard');
+      setEnableAdminPortal(false);
       await loadTenants();
     } catch (e) {
       console.error('Failed to create tenant:', e);
@@ -224,7 +230,11 @@ export default function BusinessAgents() {
                   {([['wp_standard', 'WP Standard'], ['wp_agency', 'WP Agency']] as const).map(([val, label]) => (
                     <button
                       key={val}
-                      onClick={() => setNewCustomerType(val)}
+                      onClick={() => {
+                        setNewCustomerType(val);
+                        setEnableAdminPortal(val === 'wp_agency');
+                        setShowStandardWarning(false);
+                      }}
                       className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                         newCustomerType === val
                           ? 'bg-[#00F5D4] text-slate-900'
@@ -236,8 +246,50 @@ export default function BusinessAgents() {
                   ))}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  {newCustomerType === 'wp_standard' ? 'Single domain — admin gets 1 read-only domain' : 'Agency — admin can add up to 5 domains'}
+                  {newCustomerType === 'wp_standard' ? 'Single domain — managed from within WordPress' : 'Agency — admin can add up to 5 domains via Admin Portal'}
                 </p>
+              </div>
+
+              {/* Create Admin Portal checkbox */}
+              <div>
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    enableAdminPortal ? 'border-green-300 bg-green-50' : 'border-slate-200 hover:bg-slate-50'
+                  } ${newCustomerType === 'wp_standard' ? 'opacity-60' : ''}`}
+                  onClick={(e) => {
+                    if (newCustomerType === 'wp_standard') {
+                      e.preventDefault();
+                      setShowStandardWarning(true);
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={enableAdminPortal}
+                    onChange={(e) => {
+                      if (newCustomerType === 'wp_standard') {
+                        e.preventDefault();
+                        setShowStandardWarning(true);
+                        return;
+                      }
+                      setEnableAdminPortal(e.target.checked);
+                    }}
+                    disabled={newCustomerType === 'wp_standard'}
+                    className="accent-green-600 w-4 h-4"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Create Admin Portal Access</p>
+                    <p className="text-xs text-slate-400">Grant this admin access to the Flash ID Admin Portal</p>
+                  </div>
+                </label>
+                {showStandardWarning && (
+                  <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800">
+                      Administrator Portals are not allowed for WP Standard plans. Standard plans are governed from within the WordPress environment.
+                    </p>
+                  </div>
+                )}
               </div>
               <button
                 onClick={createTenant}
