@@ -160,6 +160,11 @@ service cloud.firestore {
       );
     }
 
+    // Consent records — QR verification consent log
+    match /consent_records/{recordId} {
+      allow read: if isAuthenticated();
+    }
+
     // Scope categories — superuser-owned seed data
     // Read: any authenticated user
     // Write: superuser only (via backend for POC)

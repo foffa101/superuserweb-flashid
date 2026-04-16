@@ -80,7 +80,12 @@ export default function ConsentLog() {
         setRecords(next);
         setLoading(false);
       },
-      (err) => {
+      (err: any) => {
+        if (err?.code === 'permission-denied') {
+          setRecords([]);
+          setLoading(false);
+          return;
+        }
         console.error('consent_records snapshot error:', err);
         setError(err.message || 'Failed to load consent records.');
         setLoading(false);
