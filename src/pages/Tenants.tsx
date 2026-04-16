@@ -67,7 +67,7 @@ type View = 'list' | 'detail' | 'form';
 export default function Tenants() {
   const { filter: globalFilter } = useGlobalFilter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('list');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | TenantStatus>('all');
@@ -618,7 +618,12 @@ export default function Tenants() {
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">{t.name}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {t.name}
+                          <FieldAgentIcon action="toggle_tenant_status" actionLabel="Change Tenant Status" page="tenants" />
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{t.email}</td>
                       <td className="px-4 py-3"><TypeBadge type={t.type} /></td>
                       <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{displayPlan(t.plan)}</td>
@@ -641,7 +646,6 @@ export default function Tenants() {
                           >
                             {t.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                           </button>
-                          <FieldAgentIcon action="toggle_tenant_status" actionLabel="Change Tenant Status" page="tenants" />
                         </div>
                       </td>
                     </tr>
@@ -711,7 +715,17 @@ export default function Tenants() {
                   </React.Fragment>
                 );
               })}
-              {filteredTenants.length === 0 && (
+              {loading && filteredTenants.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center">
+                    <div className="flex items-center justify-center gap-2 text-slate-400">
+                      <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+                      <span className="text-sm">Loading tenants...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && filteredTenants.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">No tenants found.</td>
                 </tr>
