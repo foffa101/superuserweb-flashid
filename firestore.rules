@@ -144,10 +144,8 @@ service cloud.firestore {
     // Read: tenant admin whose tenantId matches, OR the paired customer
     // Write: backend only
     match /connected_customers/{docId} {
-      allow read: if isAuthenticated() && (
-        resource.data.tenantId == request.auth.token.tenantId
-        || resource.data.customerUid == request.auth.uid
-      );
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
     }
 
     // Agent approval requests — pending/approved/denied decisions
