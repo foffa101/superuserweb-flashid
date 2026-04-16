@@ -226,7 +226,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center space-y-6">
+      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center space-y-6 min-h-[480px] flex flex-col justify-center">
         {/* Offline banner */}
         {isOffline && (
           <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm">
