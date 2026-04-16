@@ -4,6 +4,7 @@ import { onAuthChange, signOut, type User } from './lib/firebase';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
 import { FilterProvider } from './lib/FilterContext';
+import { QRVerification } from './components/QRVerification';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -171,10 +172,19 @@ export default function App() {
   }
 
   // QR MFA gate — after SSO + whitelist check, before portal access
-  // If session expired, sign out and go to login instead of showing QR
   if (user && accessStatus === 'granted' && !isQrVerified) {
-    signOut();
-    return null;
+    return (
+      <QRVerification
+        userId={user.uid}
+        onVerified={() => {
+          const level = localStorage.getItem('superadmin-security-level') || 'secure';
+          if (level === 'secure') sessionStorage.setItem('superadmin-qr-verified', '1');
+          if (level === 'more-secure') localStorage.setItem('superadmin-qr-verified-at', String(Date.now()));
+          setIsQrVerified(true);
+        }}
+        onCancel={() => signOut()}
+      />
+    );
   }
 
   return (
