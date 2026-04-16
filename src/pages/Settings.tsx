@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Save, CheckCircle } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Save, CheckCircle, ArrowRight } from 'lucide-react';
 import { type User } from '../lib/firebase';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { app } from '../lib/firebase';
@@ -12,6 +12,20 @@ interface SettingsProps {
 }
 
 type Theme = 'light' | 'dark';
+
+const REDIRECT_OPTIONS = [
+  { label: 'Dashboard (default)', value: '/dashboard' },
+  { label: 'Tenants', value: '/tenants' },
+  { label: 'Billing', value: '/billing' },
+  { label: 'Field Agents', value: '/agents/field' },
+  { label: 'Business Agents', value: '/agents/business' },
+  { label: 'Verification Queue', value: '/agents/verification' },
+  { label: 'Security', value: '/security' },
+  { label: 'Events', value: '/events' },
+  { label: 'Consent Log', value: '/consent-log' },
+  { label: 'Documentation', value: '/documentation' },
+  { label: 'Settings', value: '/settings' },
+];
 
 const SESSION_TIMEOUT_OPTIONS = [
   { label: '5 minutes', value: '5m' },
@@ -68,6 +82,7 @@ export default function Settings({ user }: SettingsProps) {
   const [securityLevel, setSecurityLevel] = useState(() => localStorage.getItem('superadmin-security-level') || 'secure');
   const [qrTimeout, setQrTimeout] = useState(() => localStorage.getItem('superadmin-qr-timeout') || '90');
   const [pollInterval, setPollInterval] = useState(() => localStorage.getItem('superadmin-poll-interval') || '1500');
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState(() => localStorage.getItem('superadmin-redirect-after-login') || '/dashboard');
 
   // Biometric requirements
   const [requireFace, setRequireFace] = useState(() => localStorage.getItem('superadmin-require-face') === '1');
@@ -255,6 +270,7 @@ export default function Settings({ user }: SettingsProps) {
     localStorage.setItem('superadmin-security-level', securityLevel);
     localStorage.setItem('superadmin-qr-timeout', qrTimeout);
     localStorage.setItem('superadmin-poll-interval', pollInterval);
+    localStorage.setItem('superadmin-redirect-after-login', redirectAfterLogin);
     localStorage.setItem('superadmin-require-face', requireFace ? '1' : '0');
     localStorage.setItem('superadmin-require-fingerprint', requireFingerprint ? '1' : '0');
     localStorage.setItem('superadmin-require-voice', requireVoice ? '1' : '0');
@@ -301,6 +317,20 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400">Profile info is managed via Google SSO and is read-only here.</p>
+      </section>
+
+      {/* Redirect After Login */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Redirect After Login</h2>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            <span className="flex items-center gap-2"><ArrowRight className="h-4 w-4 text-slate-400" /> Landing Page</span>
+          </label>
+          <select value={redirectAfterLogin} onChange={(e) => setRedirectAfterLogin(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+            {REDIRECT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          <p className="text-xs text-slate-400 mt-1">Where to redirect after successful login and QR verification</p>
+        </div>
       </section>
 
       {/* Theme Settings */}

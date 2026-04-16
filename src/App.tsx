@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { onAuthChange, signOut, type User } from './lib/firebase';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
@@ -27,6 +27,7 @@ function ProtectedRoute({ user, children }: { user: User | null; children: React
 }
 
 export default function App() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
@@ -181,6 +182,8 @@ export default function App() {
           if (level === 'secure') sessionStorage.setItem('superadmin-qr-verified', '1');
           if (level === 'more-secure') localStorage.setItem('superadmin-qr-verified-at', String(Date.now()));
           setIsQrVerified(true);
+          const redirectPath = localStorage.getItem('superadmin-redirect-after-login') || '/dashboard';
+          navigate(redirectPath, { replace: true });
         }}
         onCancel={() => signOut()}
       />
