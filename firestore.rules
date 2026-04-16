@@ -129,6 +129,7 @@ service cloud.firestore {
     // Write: backend only (Firebase Admin SDK bypasses rules)
     match /tenant_admins/{docId} {
       allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
     }
 
     // Business agents — registered API agents per tenant

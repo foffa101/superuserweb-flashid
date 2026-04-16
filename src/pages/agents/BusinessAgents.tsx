@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Building2, Plus, CheckCircle, Clock, X } from 'lucide-react';
-import { getFirestore, collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { app } from '../../lib/firebase';
 
 const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
+
+type CustomerType = 'wp_standard' | 'wp_agency';
 
 interface Tenant {
   id: string;
@@ -13,6 +15,8 @@ interface Tenant {
   createdAt: string;
   createdBy: string;
   adminEmail?: string;
+  customerType?: CustomerType;
+  domain?: string;
 }
 
 export default function BusinessAgents() {
@@ -21,6 +25,8 @@ export default function BusinessAgents() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTenantName, setNewTenantName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newCustomerType, setNewCustomerType] = useState<CustomerType>('wp_standard');
+  const [newDomain, setNewDomain] = useState('');
   const [creating, setCreating] = useState(false);
 
   const loadTenants = async () => {
@@ -38,21 +44,46 @@ export default function BusinessAgents() {
   useEffect(() => { loadTenants(); }, []);
 
   const createTenant = async () => {
-    if (!newTenantName.trim() || !newAdminEmail.trim()) return;
+    if (!newTenantName.trim() || !newAdminEmail.trim() || !newDomain.trim()) return;
     setCreating(true);
     try {
       const tenantId = `tenant_${Date.now()}`;
+      const email = newAdminEmail.trim().toLowerCase();
+      const domain = newDomain.trim().toLowerCase();
+
+      // 1. Create the tenant record
       await setDoc(doc(db, 'tenants', tenantId), {
         name: newTenantName.trim(),
         type: 'business',
+        customerType: newCustomerType,
         status: 'pending',
-        adminEmail: newAdminEmail.trim().toLowerCase(),
+        adminEmail: email,
+        domain,
+        domains: [domain],
         createdAt: new Date().toISOString(),
         createdBy: 'superuser',
       });
+
+      // 2. Add admin email to whitelist so they can access admin portal
+      const whitelistRef = doc(db, 'admin_config', 'whitelist');
+      const whitelistSnap = await getDoc(whitelistRef);
+      if (whitelistSnap.exists()) {
+        await setDoc(whitelistRef, { emails: arrayUnion(email) }, { merge: true });
+      } else {
+        await setDoc(whitelistRef, { emails: [email] });
+      }
+
+      // 3. Create tenant_admins record so admin portal can look up their tenantId
+      await setDoc(doc(db, 'tenant_admins', `${tenantId}_${email.replace(/[^a-z0-9]/g, '_')}`), {
+        email,
+        tenantId,
+      });
+
       setShowCreateModal(false);
       setNewTenantName('');
       setNewAdminEmail('');
+      setNewDomain('');
+      setNewCustomerType('wp_standard');
       await loadTenants();
     } catch (e) {
       console.error('Failed to create tenant:', e);
@@ -101,9 +132,19 @@ export default function BusinessAgents() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">{tenant.name}</p>
-                    {tenant.adminEmail && (
-                      <p className="text-xs text-slate-400">{tenant.adminEmail}</p>
-                    )}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {tenant.adminEmail && (
+                        <span className="text-xs text-slate-400">{tenant.adminEmail}</span>
+                      )}
+                      {tenant.customerType && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${tenant.customerType === 'wp_agency' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                          {tenant.customerType === 'wp_agency' ? 'WP Agency' : 'WP Standard'}
+                        </span>
+                      )}
+                      {tenant.domain && (
+                        <span className="text-[10px] text-slate-400">{tenant.domain}</span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       Created {new Date(tenant.createdAt).toLocaleDateString()}
                     </p>
@@ -167,9 +208,40 @@ export default function BusinessAgents() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00F5D4]/50"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Domain</label>
+                <input
+                  type="text"
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                  placeholder="business.com"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00F5D4]/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Customer Type</label>
+                <div className="flex gap-2">
+                  {([['wp_standard', 'WP Standard'], ['wp_agency', 'WP Agency']] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      onClick={() => setNewCustomerType(val)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        newCustomerType === val
+                          ? 'bg-[#00F5D4] text-slate-900'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  {newCustomerType === 'wp_standard' ? 'Single domain — admin gets 1 read-only domain' : 'Agency — admin can add up to 5 domains'}
+                </p>
+              </div>
               <button
                 onClick={createTenant}
-                disabled={creating || !newTenantName.trim() || !newAdminEmail.trim()}
+                disabled={creating || !newTenantName.trim() || !newAdminEmail.trim() || !newDomain.trim()}
                 className="w-full py-2 bg-[#00F5D4] text-slate-900 rounded-lg font-medium text-sm hover:bg-[#00F5D4]/80 transition-colors disabled:opacity-50"
               >
                 {creating ? 'Creating...' : 'Create Tenant'}
