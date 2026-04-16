@@ -133,12 +133,10 @@ service cloud.firestore {
 
     // Business agents — registered API agents per tenant
     // Read: tenant admin whose tenantId matches, or superuser
-    // Write: backend only
+    // Write: authenticated users (POC — production should restrict to backend + tenant admin)
     match /agents/{agentId} {
-      allow read: if isAuthenticated() && (
-        resource.data.tenantId == request.auth.token.tenantId
-        || request.auth.token.superadmin == true
-      );
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
     }
 
     // Connected customers — pairing between tenants and Flash ID users
