@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Settings as SettingsIcon, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Save, CheckCircle, ArrowRight } from 'lucide-react';
+import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Shield, ShieldCheck, ShieldAlert, Hash, ListChecks, Smile, Grid3X3, Type, Palette, Shapes, Flag, Hand, Smartphone, PenTool, Volume2, Shuffle, Ban, Dice5, QrCode, Timer, Eye, UserPlus, X, Users, Mail, Save, CheckCircle, ArrowRight } from 'lucide-react';
 import { type User } from '../lib/firebase';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { app } from '../lib/firebase';

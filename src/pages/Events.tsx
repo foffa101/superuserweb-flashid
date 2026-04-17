@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, Trash2, ScrollText } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import EventRow from '../components/EventRow';
 import { type EventType, type EventStatus, type PlatformEvent, type Tenant } from '../lib/api';
 import { getEvents, getTenants, deleteAllEvents, seedInitialData } from '../lib/firestore';

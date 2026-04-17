@@ -1,4 +1,4 @@
-import { BookOpen, Fingerprint, Building2, ShieldAlert, ScrollText, Settings, Zap, Globe, Key, Users } from 'lucide-react';
+import { Fingerprint, Building2, ShieldAlert, ScrollText, Settings, Zap, Globe, Key, Users } from 'lucide-react';
 
 export default function Documentation() {
   return (

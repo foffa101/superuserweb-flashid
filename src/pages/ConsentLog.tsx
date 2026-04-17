@@ -4,7 +4,7 @@ import {
   type QuerySnapshot, type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../lib/firestore';
-import { ScrollText, Filter, ShieldCheck, Ban, Loader2 } from 'lucide-react';
+import { Filter, ShieldCheck, Ban, Loader2 } from 'lucide-react';
 
 /**
  * Consent record shape — written by the phone (FirebaseService.writeConsentRecord)
