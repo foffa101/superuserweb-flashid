@@ -6,7 +6,7 @@ import {
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import { useFieldAgentGuard } from '../components/FieldAgentGuard';
 import { ApprovalOverlay } from '../components/ApprovalOverlay';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import {
   db,
   getTenants as fetchTenants,
@@ -187,6 +187,32 @@ export default function Tenants() {
   };
 
   const handlePlanChange = (plan: Plan) => {
+    // Warn when downgrading from Agency → Standard
+    if (isEditing && formData.plan === 'WP - Agency' && plan === 'WP - Standard') {
+      const extraSites = (formData.licensedSites || []).slice(1);
+      const msg = extraSites.length > 0
+        ? `Downgrading to WP Standard will delete ${extraSites.length} additional domain(s):\n\n${extraSites.join('\n')}\n\nAdmin portal access will also be revoked. Continue?`
+        : 'Downgrading to WP Standard will revoke admin portal access. Continue?';
+      if (!confirm(msg)) return;
+      // Strip additional domains, keep only primary
+      setFormData((prev) => ({
+        ...prev,
+        plan,
+        licensedSites: prev.licensedSites?.slice(0, 1) || [],
+        enrollmentModes: {},
+        redirectUrls: {},
+      }));
+      // Revoke admin portal access
+      if (formData.email) {
+        toggleAdminAccess(formData.email, false);
+        // Remove tenant_admins record
+        const q = query(collection(db, 'tenant_admins'), where('email', '==', formData.email.toLowerCase()));
+        getDocs(q).then((snap) => {
+          snap.docs.forEach((d) => deleteDoc(d.ref));
+        }).catch(() => {});
+      }
+      return;
+    }
     setFormData((prev) => {
       const next = { ...prev, plan };
       if (prev.type === 'api') {
@@ -213,6 +239,10 @@ export default function Tenants() {
     if ((formData.type === 'wp') && (!formData.licensedSites || formData.licensedSites.length === 0 || !formData.licensedSites[0]?.trim())) {
       alert('Primary domain is required for WordPress tenants.');
       return;
+    }
+    // Enforce single domain for WP Standard
+    if (formData.plan === 'WP - Standard' && formData.licensedSites && formData.licensedSites.length > 1) {
+      formData.licensedSites = formData.licensedSites.slice(0, 1);
     }
     if (isEditing && formData.id) {
       setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
@@ -472,13 +502,14 @@ export default function Tenants() {
               </div>
 
               {/* Additional licensed sites (Agency only) */}
+              {formData.plan === 'WP - Agency' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Additional Domains</label>
                 <div className="space-y-2">
-                  {(formData.licensedSites || []).map((site, i) => (
-                    <div key={i} className="flex items-center gap-2">
+                  {(formData.licensedSites || []).slice(1).map((site, i) => (
+                    <div key={i + 1} className="flex items-center gap-2">
                       <span className="flex-1 text-sm text-slate-700 bg-slate-50 px-3 py-1.5 rounded border border-slate-200">{site}</span>
-                      <button onClick={() => removeSite(i)} className="p-1 text-red-500 hover:text-red-700">
+                      <button onClick={() => removeSite(i + 1)} className="p-1 text-red-500 hover:text-red-700">
                         <X className="h-4 w-4" />
                       </button>
                     </div>
@@ -496,6 +527,13 @@ export default function Tenants() {
                   </div>
                 </div>
               </div>
+              )}
+              {formData.plan === 'WP - Standard' && (formData.licensedSites || []).length > 1 && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">WP Standard plans support a single domain only. Additional domains will be removed on save.</p>
+                </div>
+              )}
             </div>
           )}
 
