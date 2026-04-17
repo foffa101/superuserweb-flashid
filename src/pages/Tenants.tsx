@@ -102,6 +102,8 @@ export default function Tenants() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
   const [adminLogins, setAdminLogins] = useState<TenantAdminLogin[]>([]);
+  const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Field Agent guards
   const addTenantGuard = useFieldAgentGuard('add_tenant');
@@ -171,6 +173,33 @@ export default function Tenants() {
       await firestoreUpdateTenant(t.id, { status: newStatus });
     } catch (e) {
       console.error('Failed to update tenant status:', e);
+    }
+  };
+
+  const handleDeleteTenant = async (t: Tenant) => {
+    setDeleteLoading(true);
+    try {
+      // Delete tenant document
+      await deleteDoc(doc(db, 'tenants', t.id));
+      // Clean up related tenant_admins documents
+      const q = query(collection(db, 'tenant_admins'), where('tenantId', '==', t.id));
+      const snap = await getDocs(q);
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      // Also remove from admin whitelist if present
+      if (t.email) {
+        const updated = adminWhitelist.filter(e => e !== t.email.toLowerCase());
+        if (updated.length !== adminWhitelist.length) {
+          setAdminWhitelist(updated);
+          await setDoc(doc(db, 'admin_config', 'whitelist'), { emails: updated });
+        }
+      }
+      // Remove from local state
+      setTenants((prev) => prev.filter((x) => x.id !== t.id));
+    } catch (e) {
+      console.error('Failed to delete tenant:', e);
+    } finally {
+      setDeleteLoading(false);
+      setDeletingTenant(null);
     }
   };
 
@@ -385,32 +414,28 @@ export default function Tenants() {
 
         {/* Modal-style card */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-2xl">
-          {/* Type toggle */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Customer Type</label>
-            <div className="flex gap-2">
-              {(['wp', 'api'] as TenantType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleTypeChange(type)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    currentType === type
-                      ? type === 'wp' ? 'bg-blue-600 text-white border-blue-600' : 'bg-green-600 text-white border-green-600'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  {type === 'wp' ? 'WordPress' : 'API'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Shared fields */}
+          {/* Customer Type + Status on same row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <FormField label="Name" value={formData.name || ''} onChange={(v) => setFormData((p) => ({ ...p, name: v }))} />
-            <FormField label="Email" value={formData.email || ''} onChange={(v) => setFormData((p) => ({ ...p, email: v }))} type="email" />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Customer Type</label>
+              <div className="flex gap-2">
+                {(['wp', 'api'] as TenantType[]).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleTypeChange(type)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      currentType === type
+                        ? type === 'wp' ? 'bg-blue-600 text-white border-blue-600' : 'bg-green-600 text-white border-green-600'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {type === 'wp' ? 'WordPress' : 'API'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
               <select
                 value={formData.status || 'active'}
                 onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value as TenantStatus }))}
@@ -421,6 +446,12 @@ export default function Tenants() {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
+          </div>
+
+          {/* Shared fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <FormField label="Name" value={formData.name || ''} onChange={(v) => setFormData((p) => ({ ...p, name: v }))} />
+            <FormField label="Email" value={formData.email || ''} onChange={(v) => setFormData((p) => ({ ...p, email: v }))} type="email" />
           </div>
 
           {/* WP fields */}
@@ -778,13 +809,20 @@ export default function Tenants() {
                           >
                             {t.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                           </button>
+                          <button
+                            onClick={() => setDeletingTenant(t)}
+                            className="p-1.5 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Delete"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr className="bg-slate-50 border-b border-slate-100">
                         <td colSpan={9} className="px-6 py-4">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+                          <div className="flex justify-center gap-12 mb-3 text-center">
                             <div>
                               <p className="text-xs font-medium text-slate-500 uppercase">Total Sessions</p>
                               <p className="text-sm font-semibold text-slate-900">{t.sessionCount.toLocaleString()}</p>
@@ -799,45 +837,74 @@ export default function Tenants() {
                             </div>
                           </div>
                           {t.type === 'wp' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase mb-1">Licensed Sites</p>
+                            <div className="pt-3 border-t border-slate-200">
+                              <div className="flex justify-center gap-12 text-center mb-3">
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase">License Expiry</p>
+                                  <p className="text-sm text-slate-700">{t.licenseExpiry ? formatDate(t.licenseExpiry) : '--'}</p>
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <p className="text-xs font-medium text-slate-500 uppercase mb-2">Licensed Domains & Admins</p>
                                 {t.licensedSites && t.licensedSites.length > 0 ? (
-                                  <ul className="space-y-0.5">
-                                    {t.licensedSites.map((s, i) => (
-                                      <li key={i} className="text-xs text-blue-600">{s}</li>
-                                    ))}
+                                  <ul className="space-y-1">
+                                    {t.licensedSites.map((site, i) => {
+                                      const admin = adminLogins.find(a => a.tenantId === t.id);
+                                      return (
+                                        <li key={i} className="text-xs text-slate-700">
+                                          <span className="text-blue-600">{site}</span>
+                                          <span className="text-slate-400 mx-1.5">&mdash;</span>
+                                          <span className="text-slate-500">Admin: {admin?.email || t.email || 'N/A'}</span>
+                                        </li>
+                                      );
+                                    })}
                                   </ul>
                                 ) : (
                                   <p className="text-xs text-slate-400">None</p>
                                 )}
                               </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase">License Expiry</p>
-                                <p className="text-sm text-slate-700">{t.licenseExpiry ? formatDate(t.licenseExpiry) : '--'}</p>
-                              </div>
                             </div>
                           )}
                           {t.type === 'api' && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-200">
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase">Calls Used / Included</p>
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {(t.callsUsed || t.callsThisMonth || 0).toLocaleString()}
-                                  {t.callsIncluded ? ` / ${t.callsIncluded.toLocaleString()}` : ''}
-                                </p>
+                            <div className="pt-3 border-t border-slate-200">
+                              <div className="flex justify-center gap-12 text-center mb-3">
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase">Calls Used / Included</p>
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {(t.callsUsed || t.callsThisMonth || 0).toLocaleString()}
+                                    {t.callsIncluded ? ` / ${t.callsIncluded.toLocaleString()}` : ''}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase">Billing Cycle</p>
+                                  <p className="text-sm text-slate-700 capitalize">{t.billingCycle || '--'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase">Overage</p>
+                                  {t.callsIncluded && (t.callsUsed || 0) > t.callsIncluded ? (
+                                    <p className="text-sm font-semibold text-red-600">+{((t.callsUsed || 0) - t.callsIncluded).toLocaleString()} calls</p>
+                                  ) : (
+                                    <p className="text-sm text-green-600">None</p>
+                                  )}
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase">Billing Cycle</p>
-                                <p className="text-sm text-slate-700 capitalize">{t.billingCycle || '--'}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase">Overage</p>
-                                {t.callsIncluded && (t.callsUsed || 0) > t.callsIncluded ? (
-                                  <p className="text-sm font-semibold text-red-600">+{((t.callsUsed || 0) - t.callsIncluded).toLocaleString()} calls</p>
-                                ) : (
-                                  <p className="text-sm text-green-600">None</p>
-                                )}
+                              <div className="mt-3">
+                                <p className="text-xs font-medium text-slate-500 uppercase mb-2">Authorized Domain & Admin</p>
+                                {(() => {
+                                  const admin = adminLogins.find(a => a.tenantId === t.id);
+                                  const domain = t.licensedSites && t.licensedSites.length > 0 ? t.licensedSites[0] : null;
+                                  return (
+                                    <p className="text-xs text-slate-700">
+                                      {domain ? (
+                                        <>
+                                          <span className="text-blue-600">{domain}</span>
+                                          <span className="text-slate-400 mx-1.5">&mdash;</span>
+                                        </>
+                                      ) : null}
+                                      <span className="text-slate-500">Admin: {admin?.email || t.email || 'N/A'}</span>
+                                    </p>
+                                  );
+                                })()}
                               </div>
                             </div>
                           )}
@@ -866,6 +933,43 @@ export default function Tenants() {
           </table>
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {deletingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Delete Tenant</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-2">
+              You are about to delete <span className="font-semibold text-slate-900">{deletingTenant.name}</span>.
+            </p>
+            <p className="text-sm text-slate-600 mb-6">
+              Are you sure you want to delete this tenant? This action cannot be undone. All associated domains, admins, and data will be permanently removed.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeletingTenant(null)}
+                disabled={deleteLoading}
+                className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTenant(deletingTenant)}
+                disabled={deleteLoading}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleteLoading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -934,7 +1038,7 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      <label className="block text-sm font-bold text-slate-700 mb-1">{label}</label>
       <input
         type={type}
         value={value}

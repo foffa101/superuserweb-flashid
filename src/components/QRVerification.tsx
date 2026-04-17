@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Fingerprint,
   WifiOff,
+  AlertTriangle,
 } from 'lucide-react';
 
 
@@ -158,9 +159,17 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
           }
         }
 
+        // Early identity mismatch — phone denied before biometrics
+        if (session.status === 'denied' && session.scanned && !session.uid) {
+          setError('Account Mismatch — The Flash ID app that scanned this QR code is signed into a different account. Make sure you are logged into the same account on both your phone and this device, then try again.');
+          setStatus('denied');
+          if (timerRef.current) clearInterval(timerRef.current);
+          return;
+        }
+        // Late identity mismatch — caught after approval (fallback)
         if (session.status === 'approved') {
           if (session.uid && session.uid !== userId) {
-            setError('Verification failed: approver identity mismatch. Please try again with the correct account.');
+            setError('Account Mismatch — The Flash ID app that scanned this QR code is signed into a different account. Make sure you are logged into the same account on both your phone and this device, then try again.');
             setStatus('denied');
             if (timerRef.current) clearInterval(timerRef.current);
             return;
@@ -441,19 +450,36 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         {!isRegenerating && status === 'denied' && (
           <div className="py-8 space-y-4">
             <div className="flex justify-center">
-              <div className="p-4 bg-red-600 rounded-full">
-                <X className="w-12 h-12 text-white" strokeWidth={3} />
+              <div className={`p-4 rounded-full ${error?.startsWith('Account Mismatch') ? 'bg-amber-100' : 'bg-red-600'}`}>
+                {error?.startsWith('Account Mismatch') ? (
+                  <AlertTriangle className="w-12 h-12 text-amber-600" />
+                ) : (
+                  <X className="w-12 h-12 text-white" strokeWidth={3} />
+                )}
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Verification Denied</h2>
-            <p className="text-slate-500 text-sm">The request was denied on your device.</p>
-            {error && <p className="text-red-600 font-medium text-sm">{error}</p>}
-            <button
-              onClick={handleCancel}
-              className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
-            >
-              Cancel
-            </button>
+            <h2 className="text-2xl font-bold text-slate-900">
+              {error?.startsWith('Account Mismatch') ? 'Account Mismatch' : 'Verification Denied'}
+            </h2>
+            <p className="text-slate-500 text-sm">
+              {error?.startsWith('Account Mismatch')
+                ? 'The phone that scanned this QR code is signed into a different account.'
+                : 'The request was denied on your device.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setStatus(null); setError(null); setQrUrl(null); createSession(); }}
+                className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
