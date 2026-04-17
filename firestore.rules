@@ -18,6 +18,13 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // User settings — security settings persisted to Firestore (replaces localStorage)
+    // Only the account owner can read/write their own settings
+    // Used by: web-flashid, adminweb-flashid, superuserweb-flashid (settings pages)
+    match /user_settings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // Voice biometric data — only the owner can access their voiceprint
     // Used by: web-flashid (read enrollment status), app-flashid (write during enrollment)
     match /voiceprints/{userId} {

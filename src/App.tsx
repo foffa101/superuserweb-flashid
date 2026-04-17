@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthChange, signOut, type User } from './lib/firebase';
+import { loadSecuritySettings } from './lib/settings';
 import { isEmailWhitelisted } from './lib/whitelist';
 import { ShieldX } from 'lucide-react';
 import { FilterProvider } from './lib/FilterContext';
@@ -111,6 +112,24 @@ export default function App() {
       }, 5000);
     }
   }, []);
+
+  // Load security settings from Firestore on auth
+  useEffect(() => {
+    if (!user) return;
+    loadSecuritySettings(user.uid).then(() => {
+      // Settings synced to localStorage — re-evaluate QR verification state
+      const level = localStorage.getItem('superadmin-security-level') || 'secure';
+      if (level === 'most-secure') setIsQrVerified(false);
+      else if (level === 'secure') setIsQrVerified(sessionStorage.getItem('superadmin-qr-verified') === '1');
+      else if (level === 'more-secure') {
+        const ts = localStorage.getItem('superadmin-qr-verified-at');
+        if (!ts) { setIsQrVerified(false); return; }
+        const timeout = localStorage.getItem('superadmin-session-timeout') || '4h';
+        const ms: Record<string, number> = { '5m': 300000, '15m': 900000, '30m': 1800000, '1h': 3600000, '2h': 7200000, '4h': 14400000, '8h': 28800000, '12h': 43200000, '18h': 64800000, '24h': 86400000, 'never': Infinity };
+        setIsQrVerified(Date.now() - parseInt(ts) < (ms[timeout] || 14400000));
+      }
+    });
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = onAuthChange((u) => {

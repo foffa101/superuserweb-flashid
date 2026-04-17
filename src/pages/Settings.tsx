@@ -3,6 +3,7 @@ import { ScanFace, Fingerprint, Mic, ToggleLeft, ToggleRight, Shield, ShieldChec
 import { type User } from '../lib/firebase';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { app } from '../lib/firebase';
+import { saveSecuritySettings, loadSecuritySettings } from '../lib/settings';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
 
 const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
@@ -264,6 +265,23 @@ export default function Settings({ user }: SettingsProps) {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
+  // Load settings from Firestore on mount
+  useEffect(() => {
+    loadSecuritySettings(user.uid).then((s) => {
+      setSecurityLevel(s.securityLevel);
+      setSessionTimeout(s.sessionTimeout);
+      setQrTimeout(s.qrTimeout);
+      setPollInterval(s.pollInterval);
+      setRedirectAfterLogin(s.redirectAfterLogin);
+      setRequireFace(s.requireFace);
+      setRequireFingerprint(s.requireFingerprint);
+      setRequireVoice(s.requireVoice);
+      setBiometricNone(s.biometricNone);
+      setBiometricRandom(s.biometricRandom);
+      setEnabledMethods(s.verificationMethods);
+    });
+  }, [user.uid]);
+
   const handleSave = () => {
     localStorage.setItem('superadmin-theme', theme);
     localStorage.setItem('superadmin-session-timeout', sessionTimeout);
@@ -277,6 +295,20 @@ export default function Settings({ user }: SettingsProps) {
     localStorage.setItem('superadmin-biometric-none', biometricNone ? '1' : '0');
     localStorage.setItem('superadmin-biometric-random', biometricRandom ? '1' : '0');
     localStorage.setItem('superadmin-verification-methods', JSON.stringify(enabledMethods));
+    // Persist security settings to Firestore
+    saveSecuritySettings(user.uid, {
+      securityLevel,
+      sessionTimeout,
+      qrTimeout,
+      pollInterval,
+      redirectAfterLogin,
+      requireFace,
+      requireFingerprint,
+      requireVoice,
+      biometricNone,
+      biometricRandom,
+      verificationMethods: enabledMethods,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
