@@ -103,18 +103,25 @@ function readFromLocalStorage(): SecuritySettings {
 }
 
 export async function loadSecuritySettings(uid: string): Promise<SecuritySettings> {
-  try {
-    const snap = await getDoc(doc(db, 'user_settings', uid));
-    if (snap.exists()) {
-      const data = snap.data()?.[PORTAL];
-      if (data) {
-        const settings: SecuritySettings = { ...DEFAULTS, ...data };
-        syncToLocalStorage(settings);
-        return settings;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const snap = await getDoc(doc(db, 'user_settings', uid));
+      if (snap.exists()) {
+        const data = snap.data()?.[PORTAL];
+        if (data) {
+          const settings: SecuritySettings = { ...DEFAULTS, ...data };
+          syncToLocalStorage(settings);
+          return settings;
+        }
       }
+      break;
+    } catch (e: any) {
+      if (attempt === 0 && e?.code === 'permission-denied') {
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      console.warn('[settings] Firestore load failed, using localStorage cache:', e);
     }
-  } catch (e) {
-    console.warn('[settings] Firestore load failed, using localStorage cache:', e);
   }
   return readFromLocalStorage();
 }

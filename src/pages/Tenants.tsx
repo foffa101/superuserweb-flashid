@@ -822,6 +822,7 @@ export default function Tenants() {
                     {isExpanded && (
                       <tr className="bg-slate-50 border-b border-slate-100">
                         <td colSpan={9} className="px-6 py-4">
+                          {/* Metrics */}
                           <div className="flex justify-center gap-12 mb-3 text-center">
                             <div>
                               <p className="text-xs font-medium text-slate-500 uppercase">Total Sessions</p>
@@ -836,6 +837,33 @@ export default function Tenants() {
                               <p className="text-sm text-slate-700">{formatDate(t.lastActivity)}</p>
                             </div>
                           </div>
+
+                          {/* Admin Account */}
+                          <div className="pt-3 border-t border-slate-200 mb-3">
+                            <p className="text-xs font-medium text-slate-500 uppercase mb-2">Admin Account</p>
+                            {(() => {
+                              const adminEmail = t.email?.toLowerCase();
+                              const hasPortalAccess = adminEmail ? adminWhitelist.includes(adminEmail) : false;
+                              const login = adminLogins.find(a => a.tenantId === t.id || a.email === adminEmail);
+                              return (
+                                <div className="flex items-center gap-2 text-xs text-slate-700">
+                                  <span className={`inline-block h-2.5 w-2.5 rounded-full flex-shrink-0 ${hasPortalAccess ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <span className="font-medium">{t.email || 'N/A'}</span>
+                                  <span className="text-slate-400">—</span>
+                                  <span className={hasPortalAccess ? 'text-green-600' : 'text-red-500'}>
+                                    {hasPortalAccess ? 'Portal access active' : 'No portal access'}
+                                  </span>
+                                  {login?.lastLogin && (
+                                    <>
+                                      <span className="text-slate-300">|</span>
+                                      <span className="text-slate-400">Last login: {formatLastLogin(login.lastLogin, login.lastLoginTimezone)}</span>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+
                           {t.type === 'wp' && (
                             <div className="pt-3 border-t border-slate-200">
                               <div className="flex justify-center gap-12 text-center mb-3">
@@ -843,21 +871,21 @@ export default function Tenants() {
                                   <p className="text-xs font-medium text-slate-500 uppercase">License Expiry</p>
                                   <p className="text-sm text-slate-700">{t.licenseExpiry ? formatDate(t.licenseExpiry) : '--'}</p>
                                 </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase">Licensed Domains</p>
+                                  <p className="text-sm font-semibold text-slate-900">{t.licensedSites?.length || 0}</p>
+                                </div>
                               </div>
                               <div className="mt-3">
-                                <p className="text-xs font-medium text-slate-500 uppercase mb-2">Licensed Domains & Admins</p>
+                                <p className="text-xs font-medium text-slate-500 uppercase mb-2">Domains</p>
                                 {t.licensedSites && t.licensedSites.length > 0 ? (
                                   <ul className="space-y-1">
-                                    {t.licensedSites.map((site, i) => {
-                                      const admin = adminLogins.find(a => a.tenantId === t.id);
-                                      return (
-                                        <li key={i} className="text-xs text-slate-700">
-                                          <span className="text-blue-600">{site}</span>
-                                          <span className="text-slate-400 mx-1.5">&mdash;</span>
-                                          <span className="text-slate-500">Admin: {admin?.email || t.email || 'N/A'}</span>
-                                        </li>
-                                      );
-                                    })}
+                                    {t.licensedSites.map((site, i) => (
+                                      <li key={i} className="text-xs text-slate-700 flex items-center gap-2">
+                                        <span className="text-blue-600">{site}</span>
+                                        {i === 0 && <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Primary</span>}
+                                      </li>
+                                    ))}
                                   </ul>
                                 ) : (
                                   <p className="text-xs text-slate-400">None</p>
@@ -888,24 +916,12 @@ export default function Tenants() {
                                   )}
                                 </div>
                               </div>
-                              <div className="mt-3">
-                                <p className="text-xs font-medium text-slate-500 uppercase mb-2">Authorized Domain & Admin</p>
-                                {(() => {
-                                  const admin = adminLogins.find(a => a.tenantId === t.id);
-                                  const domain = t.licensedSites && t.licensedSites.length > 0 ? t.licensedSites[0] : null;
-                                  return (
-                                    <p className="text-xs text-slate-700">
-                                      {domain ? (
-                                        <>
-                                          <span className="text-blue-600">{domain}</span>
-                                          <span className="text-slate-400 mx-1.5">&mdash;</span>
-                                        </>
-                                      ) : null}
-                                      <span className="text-slate-500">Admin: {admin?.email || t.email || 'N/A'}</span>
-                                    </p>
-                                  );
-                                })()}
-                              </div>
+                              {t.licensedSites && t.licensedSites.length > 0 && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-medium text-slate-500 uppercase mb-2">Authorized Domain</p>
+                                  <p className="text-xs text-blue-600">{t.licensedSites[0]}</p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
