@@ -10,9 +10,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   db,
   getTenants as fetchTenants,
+  getTenantAdminLogins,
   createTenant,
   updateTenant as firestoreUpdateTenant,
   seedInitialData,
+  type TenantAdminLogin,
 } from '../lib/firestore';
 import {
   generateLicenseKey,
@@ -30,6 +32,30 @@ import { useGlobalFilter } from '../lib/FilterContext';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatLastLogin(iso?: string, tz?: string): string {
+  if (!iso) return 'Never';
+  try {
+    const d = new Date(iso);
+    const opts: Intl.DateTimeFormatOptions = {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+      timeZoneName: 'short',
+    };
+    if (tz) opts.timeZone = tz;
+    const formatted = d.toLocaleString('en-US', opts);
+    // Format: "14-Apr-2026 @ 2:30 PM (EST)"
+    const parts = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', ...(tz ? { timeZone: tz } : {}) });
+    const timeParts = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, ...(tz ? { timeZone: tz } : {}) });
+    const tzAbbr = d.toLocaleTimeString('en-US', { timeZoneName: 'short', ...(tz ? { timeZone: tz } : {}) }).split(' ').pop() || '';
+    // parts = "Apr 14, 2026" -> rearrange to "14-Apr-2026"
+    const m = parts.match(/([A-Za-z]+)\s+(\d+),?\s+(\d+)/);
+    const dateStr = m ? `${m[2]}-${m[1]}-${m[3]}` : parts;
+    return `${dateStr} @ ${timeParts} (${tzAbbr})`;
+  } catch {
+    return iso;
+  }
 }
 
 const wpPlans: WPPlan[] = ['WP - Standard', 'WP - Agency'];
@@ -76,6 +102,7 @@ export default function Tenants() {
   const [newSite, setNewSite] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
+  const [adminLogins, setAdminLogins] = useState<TenantAdminLogin[]>([]);
 
   // Field Agent guards
   const addTenantGuard = useFieldAgentGuard('add_tenant');
@@ -85,8 +112,9 @@ export default function Tenants() {
   useEffect(() => {
     async function load() {
       await seedInitialData();
-      const data = await fetchTenants();
+      const [data, logins] = await Promise.all([fetchTenants(), getTenantAdminLogins()]);
       setTenants(data);
+      setAdminLogins(logins);
       setLoading(false);
     }
     load();
@@ -622,15 +650,7 @@ export default function Tenants() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-100 rounded-xl">
-            <Building2 className="w-5 h-5 text-red-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Tenant Management</h1>
-            <p className="text-sm text-slate-500 mt-1">{filteredTenants.length} tenants</p>
-          </div>
-        </div>
+        <p className="text-sm text-slate-500">{filteredTenants.length} tenants</p>
         <div className="flex items-center gap-2">
           <button onClick={openAdd} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 flex items-center gap-2">
             <Plus className="h-4 w-4" /> Add Tenant
@@ -669,6 +689,7 @@ export default function Tenants() {
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Plan</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Created</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Last Login</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
               </tr>
             </thead>
@@ -697,6 +718,12 @@ export default function Tenants() {
                       <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">{displayPlan(t.plan)}</td>
                       <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                        {(() => {
+                          const login = adminLogins.find(a => a.tenantId === t.id || a.email === t.email?.toLowerCase());
+                          return formatLastLogin(login?.lastLogin, login?.lastLoginTimezone);
+                        })()}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button onClick={() => openDetail(t)} className="p-1.5 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100" title="View">
@@ -719,7 +746,7 @@ export default function Tenants() {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-slate-50 border-b border-slate-100">
-                        <td colSpan={8} className="px-6 py-4">
+                        <td colSpan={9} className="px-6 py-4">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
                             <div>
                               <p className="text-xs font-medium text-slate-500 uppercase">Total Sessions</p>
@@ -785,7 +812,7 @@ export default function Tenants() {
               })}
               {loading && filteredTenants.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={9} className="px-4 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-slate-400">
                       <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
                       <span className="text-sm">Loading tenants...</span>
@@ -795,7 +822,7 @@ export default function Tenants() {
               )}
               {!loading && filteredTenants.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">No tenants found.</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-400">No tenants found.</td>
                 </tr>
               )}
             </tbody>

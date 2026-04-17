@@ -3,16 +3,6 @@ import { BookOpen, Fingerprint, Building2, ShieldAlert, ScrollText, Settings, Za
 export default function Documentation() {
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-red-100 rounded-xl">
-          <BookOpen className="w-5 h-5 text-red-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Documentation</h1>
-          <p className="text-sm text-slate-500 mt-1">How to use the Flash ID Super Admin portal</p>
-        </div>
-      </div>
-
       {/* Getting Started */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">

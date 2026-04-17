@@ -296,16 +296,6 @@ export default function Settings({ user }: SettingsProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-red-100 rounded-xl">
-          <SettingsIcon className="w-5 h-5 text-red-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-sm text-slate-500 mt-1">Profile and portal preferences</p>
-        </div>
-      </div>
-
       {/* Profile */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Profile</h2>
@@ -319,20 +309,6 @@ export default function Settings({ user }: SettingsProps) {
         <p className="text-xs text-slate-400">Profile info is managed via Google SSO and is read-only here.</p>
       </section>
 
-      {/* Redirect After Login */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Redirect After Login</h2>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            <span className="flex items-center gap-2"><ArrowRight className="h-4 w-4 text-slate-400" /> Landing Page</span>
-          </label>
-          <select value={redirectAfterLogin} onChange={(e) => setRedirectAfterLogin(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
-            {REDIRECT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-          <p className="text-xs text-slate-400 mt-1">Where to redirect after successful login and QR verification</p>
-        </div>
-      </section>
-
       {/* Theme Settings */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Theme Settings</h2>
@@ -343,63 +319,6 @@ export default function Settings({ user }: SettingsProps) {
             <button onClick={() => setTheme('dark')} className={`px-4 py-2 text-sm font-medium transition-colors border-l border-slate-300 ${theme === 'dark' ? 'bg-red-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>Dark</button>
           </div>
           <p className="text-xs text-slate-400 mt-1">Theme preference is stored locally</p>
-        </div>
-      </section>
-
-      {/* Session Timeout */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Session Timeout</h2>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Timeout <span className="text-slate-400 font-normal">(auto-logout)</span></label>
-          <select value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
-            {SESSION_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-          <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out from this portal</p>
-        </div>
-        <div className="mt-6 pt-6 border-t border-slate-100">
-          <label className="block text-sm font-medium text-slate-700 mb-3">Verification Persistence</label>
-          <div className="space-y-2">
-            {[
-              { value: 'secure', icon: Shield, label: 'Secure', desc: 'Verification persists across page refreshes, clears when browser tab closes', color: 'text-green-500' },
-              { value: 'more-secure', icon: ShieldCheck, label: 'More Secure', desc: 'Verification persists for the session timeout duration, then re-verifies', color: 'text-amber-500' },
-              { value: 'most-secure', icon: ShieldAlert, label: 'Most Secure', desc: 'Verification required on every page load', color: 'text-red-500' },
-            ].map((opt) => (
-              <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${securityLevel === opt.value ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                <input type="radio" name="securityLevel" value={opt.value} checked={securityLevel === opt.value} onChange={(e) => setSecurityLevel(e.target.value)} className="mt-1 accent-red-600" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <opt.icon className={`h-4 w-4 ${opt.color}`} />
-                    <span className="text-sm font-medium text-slate-900">{opt.label}</span>
-                    {opt.value === 'secure' && <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">Default</span>}
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* QR Code Settings */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">QR Code Settings</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <span className="flex items-center gap-2"><QrCode className="h-4 w-4 text-slate-400" /> QR Code Timeout</span>
-            </label>
-            <select value={qrTimeout} onChange={(e) => setQrTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
-              {QR_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-            <p className="text-xs text-slate-400 mt-1">How long the QR code stays valid before expiring</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <span className="flex items-center gap-2"><Timer className="h-4 w-4 text-slate-400" /> Poll Interval (milliseconds)</span>
-            </label>
-            <input type="number" min="1000" max="5000" step="100" value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
-            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for the verification approval status from Flash ID app (1000-5000ms)</p>
-          </div>
         </div>
       </section>
 
@@ -447,6 +366,29 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which biometric methods are required. "None" skips biometric verification entirely and "Random" selects one at random.</p>
+      </section>
+
+      {/* QR Code Settings */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">QR Code Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              <span className="flex items-center gap-2"><QrCode className="h-4 w-4 text-slate-400" /> QR Code Timeout</span>
+            </label>
+            <select value={qrTimeout} onChange={(e) => setQrTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+              {QR_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+            <p className="text-xs text-slate-400 mt-1">How long the QR code stays valid before expiring</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              <span className="flex items-center gap-2"><Timer className="h-4 w-4 text-slate-400" /> Poll Interval (milliseconds)</span>
+            </label>
+            <input type="number" min="1000" max="5000" step="100" value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
+            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for the verification approval status from Flash ID app (1000-5000ms)</p>
+          </div>
+        </div>
       </section>
 
       {/* Challenge Verification */}
@@ -518,6 +460,54 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which verification methods are required. "None" skips challenge verification entirely and "Random" selects one at random.</p>
+      </section>
+
+      {/* Session Timeout */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Session Timeout</h2>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Timeout <span className="text-slate-400 font-normal">(auto-logout)</span></label>
+          <select value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+            {SESSION_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          <p className="text-xs text-slate-400 mt-1">How long before you are automatically logged out from this portal</p>
+        </div>
+        <div className="mt-6 pt-6 border-t border-slate-100">
+          <label className="block text-sm font-medium text-slate-700 mb-3">Verification Persistence</label>
+          <div className="space-y-2">
+            {[
+              { value: 'secure', icon: Shield, label: 'Secure', desc: 'Verification persists across page refreshes, clears when browser tab closes', color: 'text-green-500' },
+              { value: 'more-secure', icon: ShieldCheck, label: 'More Secure', desc: 'Verification persists for the session timeout duration, then re-verifies', color: 'text-amber-500' },
+              { value: 'most-secure', icon: ShieldAlert, label: 'Most Secure', desc: 'Verification required on every page load', color: 'text-red-500' },
+            ].map((opt) => (
+              <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${securityLevel === opt.value ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                <input type="radio" name="securityLevel" value={opt.value} checked={securityLevel === opt.value} onChange={(e) => setSecurityLevel(e.target.value)} className="mt-1 accent-red-600" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <opt.icon className={`h-4 w-4 ${opt.color}`} />
+                    <span className="text-sm font-medium text-slate-900">{opt.label}</span>
+                    {opt.value === 'secure' && <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">Default</span>}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Redirect After Login */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Redirect After Login</h2>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            <span className="flex items-center gap-2"><ArrowRight className="h-4 w-4 text-slate-400" /> Landing Page</span>
+          </label>
+          <select value={redirectAfterLogin} onChange={(e) => setRedirectAfterLogin(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+            {REDIRECT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          <p className="text-xs text-slate-400 mt-1">Where to redirect after successful login and QR verification</p>
+        </div>
       </section>
 
       {/* Access Management */}

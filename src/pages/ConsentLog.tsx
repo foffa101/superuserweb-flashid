@@ -125,25 +125,12 @@ export default function ConsentLog() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <ScrollText className="w-6 h-6 text-blue-600" />
-            Consent Log
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Immutable audit trail of first-time site authorizations across the platform.
-            Records are never deleted — revoking a site stamps the revoke timestamp so the
-            compliance history stays intact.
-          </p>
+      <div className="flex items-center justify-end gap-3 text-sm">
+        <div className="px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-medium">
+          {activeCount} active
         </div>
-        <div className="flex gap-3 text-sm">
-          <div className="px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-medium">
-            {activeCount} active
-          </div>
-          <div className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-            {revokedCount} revoked
-          </div>
+        <div className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+          {revokedCount} revoked
         </div>
       </div>
 

@@ -109,11 +109,7 @@ export default function BusinessAgents() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Business Agents</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage business tenants and their agent registrations.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-[#00F5D4] text-slate-900 rounded-lg font-medium text-sm hover:bg-[#00F5D4]/80 transition-colors"

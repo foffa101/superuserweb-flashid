@@ -17,6 +17,7 @@ import {
   Bot,
   Shield,
   ClipboardCheck,
+  type LucideIcon,
 } from 'lucide-react';
 import { signOut, type User } from '../lib/firebase';
 import { useGlobalFilter, type GlobalFilter } from '../lib/FilterContext';
@@ -36,6 +37,20 @@ const allNavItems = [
   { to: '/documentation', label: 'Documentation', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
+
+const pageInfo: Record<string, { icon: LucideIcon; title: string; subtitle: string }> = {
+  '/dashboard': { icon: LayoutDashboard, title: 'Platform Overview', subtitle: 'Real-time status of the Flash ID platform' },
+  '/tenants': { icon: Building2, title: 'Tenant Management', subtitle: 'Manage registered tenants' },
+  '/billing': { icon: DollarSign, title: 'Billing', subtitle: 'Revenue, invoices, and usage overview' },
+  '/agents/field': { icon: Shield, title: 'Field Agents', subtitle: 'Actions protected by Flash ID approval' },
+  '/agents/business': { icon: Building2, title: 'Business Agents', subtitle: 'Manage business tenants and their agent registrations' },
+  '/agents/verification': { icon: ClipboardCheck, title: 'Verification Queue', subtitle: 'Review and verify pending business applications' },
+  '/security': { icon: ShieldAlert, title: 'Platform Security', subtitle: 'Manage rate limiting, bans, and geo settings' },
+  '/events': { icon: ScrollText, title: 'Platform Event Log', subtitle: 'Activity and audit events' },
+  '/consent-log': { icon: FileCheck2, title: 'Consent Log', subtitle: 'Immutable audit trail of site authorizations' },
+  '/documentation': { icon: BookOpen, title: 'Documentation', subtitle: 'How to use the Flash ID Super Admin portal' },
+  '/settings': { icon: Settings, title: 'Settings', subtitle: 'Profile and portal preferences' },
+};
 
 interface LayoutProps {
   user: User;
@@ -66,11 +81,31 @@ export default function Layout({ user }: LayoutProps) {
 
   const sidebar = (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-700">
-        <Fingerprint className="h-8 w-8 text-red-400" />
-        <div>
-          <h1 className="text-lg font-bold text-white leading-tight">Flash ID</h1>
-          <p className="text-xs text-slate-400">Super Admin</p>
+      <div className="px-6 py-5 border-b border-slate-700">
+        <div className="flex items-center gap-3">
+          <Fingerprint className="h-8 w-8 text-red-400" />
+          <div>
+            <h1 className="text-lg font-bold text-white leading-tight">Flash ID</h1>
+            <p className="text-xs text-slate-400">Super Admin</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-[10px] font-medium text-red-400 bg-red-900/30 border border-red-700/40 px-1.5 py-0.5 rounded">INTERNAL</span>
+          <div className="flex items-center bg-slate-700 rounded-full p-0.5">
+            {(['all', 'wp', 'api'] as GlobalFilter[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setFilter(v)}
+                className={`px-2 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
+                  filter === v
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {v === 'all' ? 'All' : v.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -179,29 +214,29 @@ export default function Layout({ user }: LayoutProps) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="hidden lg:flex items-center gap-3">
-            <span className="text-xs font-medium text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">INTERNAL</span>
-            <div className="flex items-center bg-slate-100 rounded-full p-0.5">
-              {(['all', 'wp', 'api'] as GlobalFilter[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setFilter(v)}
-                  className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${
-                    filter === v
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {v === 'all' ? 'All' : v.toUpperCase()}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {(() => {
+              const info = pageInfo[location.pathname];
+              if (!info) return null;
+              const PageIcon = info.icon;
+              return (
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-red-100 rounded-lg">
+                    <PageIcon className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-slate-900 leading-tight">{info.title}</h1>
+                    <p className="text-xs text-slate-500">{info.subtitle}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           <div className="relative">
             <button

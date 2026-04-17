@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Building2, Activity, Users, TrendingUp, HeartPulse, LayoutDashboard } from 'lucide-react';
+import { Building2, Activity, Users, TrendingUp, HeartPulse } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import EventRow from '../components/EventRow';
 import type { Tenant, PlatformEvent } from '../lib/api';
@@ -78,16 +78,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-red-100 rounded-xl">
-          <LayoutDashboard className="w-5 h-5 text-red-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Platform Overview</h1>
-          <p className="text-sm text-slate-500 mt-1">Real-time status of the Flash ID platform</p>
-        </div>
-      </div>
-
       {/* Stats grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

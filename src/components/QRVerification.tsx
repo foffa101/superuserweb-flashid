@@ -37,6 +37,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
   const [scanned, setScanned] = useState(false);
   const [challengePassed, setChallengePassed] = useState(false);
   const [cooldown, setCooldown] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [honeypotValue, setHoneypotValue] = useState('');
   const [biometricsRequired, setBiometricsRequired] = useState(false);
   const [challengeRequired, setChallengeRequired] = useState(false);
@@ -175,6 +176,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
       setError('Failed to create verification session. Please try again.');
     } finally {
       setIsCreating(false);
+      setIsRegenerating(false);
     }
   }, [userId]);
 
@@ -267,8 +269,32 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
           </p>
         </div>
 
+        {/* --- REGENERATING — stable spinner prevents layout shift --- */}
+        {isRegenerating && (
+          <div className="space-y-5">
+            <div className="flex justify-center">
+              <div className="flex items-center justify-center gap-2 bg-blue-100 text-slate-700 rounded-full py-2 px-4 w-[280px]">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-base font-medium">Regenerating session...</span>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="relative p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg">
+                <div className="w-[280px] h-[280px] rounded-lg bg-slate-50 flex items-center justify-center">
+                  <Loader2 className="w-10 h-10 text-slate-300 animate-spin" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-slate-400">
+              <Clock className="w-4 h-4" />
+              <span className="text-base font-medium">Preparing...</span>
+            </div>
+            <div className="h-12" />
+          </div>
+        )}
+
         {/* --- PENDING --- */}
-        {status === 'pending' && !isCreating && (
+        {!isRegenerating && status === 'pending' && !isCreating && (
           <div className="space-y-5">
 
             {/* Status pill — background acts as countdown timer */}
@@ -374,7 +400,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         )}
 
         {/* --- CREATING — full-layout skeleton so card doesn't resize --- */}
-        {isCreating && (
+        {!isRegenerating && isCreating && (
           <div className="space-y-5">
             <div className="flex justify-center">
               <div className="flex items-center justify-center gap-2 bg-blue-100 text-slate-700 rounded-full py-2 px-4 w-[280px]">
@@ -398,7 +424,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         )}
 
         {/* --- APPROVED --- */}
-        {status === 'approved' && (
+        {!isRegenerating && status === 'approved' && (
           <div className="py-8 space-y-4">
             <div className="flex justify-center">
               <div className="p-4 bg-green-100 rounded-full">
@@ -412,7 +438,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         )}
 
         {/* --- DENIED --- */}
-        {status === 'denied' && (
+        {!isRegenerating && status === 'denied' && (
           <div className="py-8 space-y-4">
             <div className="flex justify-center">
               <div className="p-4 bg-red-600 rounded-full">
@@ -432,7 +458,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         )}
 
         {/* --- EXPIRED --- */}
-        {status === 'expired' && (
+        {!isRegenerating && status === 'expired' && (
           <div className="py-8 space-y-4">
             <div className="flex justify-center">
               <div className="p-4 bg-amber-100 rounded-full">
@@ -442,7 +468,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             <h2 className="text-2xl font-bold text-slate-900">Session Expired</h2>
             <p className="text-slate-500 text-sm">The QR code has expired. Generate a new one to continue.</p>
             <button
-              onClick={() => { denyCurrentSession(); startSession(); }}
+              onClick={() => { setIsRegenerating(true); denyCurrentSession(); startSession(); }}
               disabled={cooldown}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -465,7 +491,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
         </div>
 
         {/* --- ERROR (standalone) --- */}
-        {error && status !== 'denied' && (
+        {!isRegenerating && error && status !== 'denied' && (
           <div className="py-8 space-y-4">
             <div className="flex justify-center">
               <div className="p-4 bg-red-100 rounded-full">
@@ -474,7 +500,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </div>
             <p className="text-red-600 font-medium text-sm">{error}</p>
             <button
-              onClick={() => { denyCurrentSession(); startSession(); }}
+              onClick={() => { setIsRegenerating(true); denyCurrentSession(); startSession(); }}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all"
             >
               Retry

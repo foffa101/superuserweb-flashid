@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
 import { type BannedIP } from '../lib/api';
 import {
@@ -134,16 +134,6 @@ export default function Security() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-red-100 rounded-xl">
-          <ShieldAlert className="w-5 h-5 text-red-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Platform Security</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage rate limiting, bans, and geo settings</p>
-        </div>
-      </div>
-
       {/* Rate Limiting */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Rate Limiting</h2>

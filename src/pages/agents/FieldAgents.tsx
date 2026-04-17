@@ -9,9 +9,6 @@ export default function FieldAgents() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Field Agents</h1>
-      <p className="text-sm text-slate-500 mb-6">Actions protected by Flash ID approval. Configure agents using the shield icon next to action buttons.</p>
-
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         {fieldAgents.length === 0 ? (
           <p className="text-sm text-slate-400">No field agents configured yet.</p>

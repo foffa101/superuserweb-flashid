@@ -24,6 +24,25 @@ import type {
 // ─── Named Firestore database ───
 export const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 
+// ─── Tenant Admin Login Info ───
+
+export interface TenantAdminLogin {
+  tenantId: string;
+  email: string;
+  lastLogin?: string;
+  lastLoginTimezone?: string;
+}
+
+export async function getTenantAdminLogins(): Promise<TenantAdminLogin[]> {
+  try {
+    const snap = await getDocs(collection(db, 'tenant_admins'));
+    return snap.docs.map((d) => d.data() as TenantAdminLogin);
+  } catch (e) {
+    console.error('Failed to get tenant admin logins:', e);
+    return [];
+  }
+}
+
 // ─── Tenants ───
 
 export async function getTenants(): Promise<Tenant[]> {
