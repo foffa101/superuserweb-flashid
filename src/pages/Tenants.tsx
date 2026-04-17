@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Building2, Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
+  Plus, Eye, Edit3, Ban, CheckCircle, ArrowLeft, X,
   ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, Lock,
 } from 'lucide-react';
 import { FieldAgentIcon } from '../components/FieldAgentIcon';
@@ -44,7 +44,6 @@ function formatLastLogin(iso?: string, tz?: string): string {
       timeZoneName: 'short',
     };
     if (tz) opts.timeZone = tz;
-    const formatted = d.toLocaleString('en-US', opts);
     // Format: "14-Apr-2026 @ 2:30 PM (EST)"
     const parts = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', ...(tz ? { timeZone: tz } : {}) });
     const timeParts = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, ...(tz ? { timeZone: tz } : {}) });
