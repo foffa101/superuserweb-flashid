@@ -468,7 +468,7 @@ export function QRVerification({ userId, onVerified, onCancel }: QRVerificationP
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => { setStatus(null); setError(null); setQrUrl(null); createSession(); }}
+                onClick={() => { setStatus('pending' as any); setError(''); setQrUrl(''); startSession(); }}
                 className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all"
               >
                 Try Again
