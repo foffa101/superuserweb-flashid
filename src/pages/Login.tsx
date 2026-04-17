@@ -86,10 +86,10 @@ export default function Login() {
           </div>
           <div className="flex gap-2 items-center justify-center">
             <a href="https://play.google.com/store/apps/details?id=com.flashid.app" target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
-              <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" className="h-[72px] w-auto" />
+              <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" className="h-10 sm:h-[72px] w-auto" />
             </a>
             <a href="https://apps.apple.com/app/flashid" target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
-              <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" className="h-12 w-auto" />
+              <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" className="h-10 sm:h-12 w-auto" />
             </a>
           </div>
         </div>
