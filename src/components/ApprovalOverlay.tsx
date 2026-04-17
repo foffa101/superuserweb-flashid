@@ -10,8 +10,8 @@ export function ApprovalOverlay({ status, onCancel }: ApprovalOverlayProps) {
         <div className="flex justify-center mb-2">
           <div className="h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
         </div>
-        <p className="text-sm font-semibold text-amber-800">Waiting for Field Agent approval</p>
-        <p className="text-xs text-amber-600 mt-1">Approve this action on your Flash ID app (Agents tab)</p>
+        <p className="text-sm font-semibold text-amber-800">Waiting for Supervisory Approval</p>
+        <p className="text-xs text-amber-600 mt-1">Your operation will complete with Approval, Rejection or Time-out.</p>
         {onCancel && (
           <button onClick={onCancel} className="mt-3 text-xs text-amber-500 hover:text-amber-700 font-medium">
             Cancel
