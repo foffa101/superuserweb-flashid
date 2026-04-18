@@ -104,6 +104,8 @@ export default function Tenants() {
   const [adminLogins, setAdminLogins] = useState<TenantAdminLogin[]>([]);
   const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Field Agent guards
   const addTenantGuard = useFieldAgentGuard('add_tenant');
@@ -263,37 +265,48 @@ export default function Tenants() {
 
   const saveForm = async () => {
     if (!formData.name || !formData.email) return;
+    if (saving) return; // prevent double-click
     // WP tenants require at least a primary domain
     if ((formData.type === 'wp') && (!formData.licensedSites || formData.licensedSites.length === 0 || !formData.licensedSites[0]?.trim())) {
-      alert('Primary domain is required for WordPress tenants.');
+      setSaveResult({ ok: false, msg: 'Primary domain is required for WordPress tenants.' });
       return;
     }
     // Enforce single domain for WP Standard
     if (formData.plan === 'WP - Standard' && formData.licensedSites && formData.licensedSites.length > 1) {
       formData.licensedSites = formData.licensedSites.slice(0, 1);
     }
-    if (isEditing && formData.id) {
-      setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
-      try {
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      if (isEditing && formData.id) {
         await firestoreUpdateTenant(formData.id, formData);
-      } catch (e) {
-        console.error('Failed to update tenant:', e);
-      }
-    } else {
-      const newTenant: Tenant = {
-        ...formData,
-        id: `t${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      } as Tenant;
-      setTenants((prev) => [...prev, newTenant]);
-      try {
+        setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
+        setSaveResult({ ok: true, msg: 'Tenant updated successfully.' });
+      } else {
+        // Check for duplicate email
+        const emailLower = formData.email!.toLowerCase();
+        const exists = tenants.some((t) => t.email?.toLowerCase() === emailLower);
+        if (exists) {
+          setSaving(false);
+          setSaveResult({ ok: false, msg: `A tenant with email "${formData.email}" already exists.` });
+          return;
+        }
+        const newTenant: Tenant = {
+          ...formData,
+          id: `t${Date.now()}`,
+          createdAt: new Date().toISOString(),
+        } as Tenant;
         await createTenant(newTenant);
-      } catch (e) {
-        console.error('Failed to create tenant:', e);
+        setTenants((prev) => [...prev, newTenant]);
+        setSaveResult({ ok: true, msg: 'Tenant created successfully.' });
       }
+      setTimeout(() => { setView('list'); setFormData({}); setSaveResult(null); }, 1200);
+    } catch (e: any) {
+      console.error('Failed to save tenant:', e);
+      setSaveResult({ ok: false, msg: e?.message || 'Failed to save tenant.' });
+    } finally {
+      setSaving(false);
     }
-    setView('list');
-    setFormData({});
   };
 
   const addSite = () => {
@@ -699,15 +712,21 @@ export default function Tenants() {
                     isEditing ? 'Edit Tenant' : 'Add Tenant',
                   );
                 }}
-                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={saving}
               >
-                {isEditing ? 'Save Changes' : 'Create Tenant'}
+                {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Tenant'}
               </button>
               <FieldAgentIcon action={isEditing ? 'edit_tenant' : 'add_tenant'} actionLabel={isEditing ? 'Edit Tenant' : 'Add Tenant'} page="tenants" />
             </div>
-            <button onClick={() => setView('list')} className="px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50">
+            <button onClick={() => { setView('list'); setSaveResult(null); }} className="px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50" disabled={saving}>
               Cancel
             </button>
+            {saveResult && (
+              <div className={`mt-2 px-3 py-2 rounded-lg text-sm font-medium ${saveResult.ok ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                {saveResult.ok ? '✓ ' : ''}{saveResult.msg}
+              </div>
+            )}
           </div>
         </div>
       </div>
