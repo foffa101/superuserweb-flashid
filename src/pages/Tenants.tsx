@@ -805,7 +805,7 @@ export default function Tenants() {
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
                         {(() => {
-                          const login = adminLogins.find(a => a.tenantId === t.id || a.email === t.email?.toLowerCase());
+                          const login = adminLogins.find(a => a.tenantId === t.id || a.email?.toLowerCase() === t.email?.toLowerCase());
                           return formatLastLogin(login?.lastLogin, login?.lastLoginTimezone);
                         })()}
                       </td>

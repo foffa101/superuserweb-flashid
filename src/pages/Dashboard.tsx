@@ -125,7 +125,7 @@ function SubscriptionGrowthChart({ wpTenants }: { wpTenants: Tenant[] }) {
   const paddingTop = 16;
   const paddingBottom = 40;
   const viewBoxW = 800;
-  const viewBoxH = 300;
+  const viewBoxH = 200;
   const chartW = viewBoxW - paddingLeft - paddingRight;
   const chartH = viewBoxH - paddingTop - paddingBottom;
 
@@ -172,9 +172,9 @@ function SubscriptionGrowthChart({ wpTenants }: { wpTenants: Tenant[] }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-900">Subscription Growth</h2>
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-semibold text-slate-900">Subscription Growth</h2>
         <div className="flex gap-1">
           {filters.map((f) => (
             <button
@@ -193,7 +193,7 @@ function SubscriptionGrowthChart({ wpTenants }: { wpTenants: Tenant[] }) {
       </div>
 
       {chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-48 text-sm text-slate-400">
+        <div className="flex items-center justify-center h-28 text-sm text-slate-400">
           No subscription data for this period.
         </div>
       ) : (
@@ -385,17 +385,17 @@ export default function Dashboard() {
   }, [allTenants]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {activeView === 'wp' ? (
         <>
           {/* WP Stats grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="Admin Portals"
-              value={wpMetrics.adminPortals}
-              icon={LayoutGrid}
-              accent="blue"
-              subtitle="WordPress tenants"
+              label="Active Tenants"
+              value={wpMetrics.activeCount}
+              icon={CheckCircle2}
+              accent="green"
+              subtitle={`${wpMetrics.suspendedCount} suspended/cancelled`}
             />
             <StatCard
               label="Authorized Domains"
@@ -405,69 +405,73 @@ export default function Dashboard() {
               subtitle={`${wpMetrics.domainsPerPortal} avg per portal`}
             />
             <StatCard
-              label="Active Tenants"
-              value={wpMetrics.activeCount}
-              icon={CheckCircle2}
-              accent="green"
-              subtitle={`${wpMetrics.suspendedCount} suspended/cancelled`}
+              label="Admin Portals"
+              value={wpMetrics.adminPortals}
+              icon={LayoutGrid}
+              accent="blue"
+              subtitle="WordPress tenants"
             />
-            <StatCard
-              label="Licenses by Plan"
-              value={`${wpMetrics.wpStandard} Std / ${wpMetrics.wpAgency} Agency`}
-              icon={Building2}
-              accent="amber"
-            />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 className="h-4 w-4 text-amber-500" />
+                <p className="text-xs font-medium text-slate-500 uppercase">Licenses by Plan</p>
+              </div>
+              <p className="text-xs text-slate-700">WP Standard <span className="font-bold text-slate-900 text-sm">{wpMetrics.wpStandard}</span></p>
+              <p className="text-xs text-slate-700 mt-1">WP Agency <span className="font-bold text-slate-900 text-sm">{wpMetrics.wpAgency}</span></p>
+            </div>
           </div>
 
           {/* Revenue & Renewals */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Monthly Revenue (MRR)</p>
-              <p className="text-2xl font-bold text-slate-900">${wpMetrics.mrr.toLocaleString()}<span className="text-sm font-normal text-slate-400">/mo</span></p>
-              <p className="text-xs text-slate-400 mt-1">{wpMetrics.activeStandard} Standard × $9 + {wpMetrics.activeAgency} Agency × $29</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <p className="text-[10px] font-medium text-slate-500 uppercase mb-0.5">Monthly Revenue (MRR)</p>
+              <p className="text-xl font-bold text-slate-900">${wpMetrics.mrr.toLocaleString()}<span className="text-xs font-normal text-slate-400">/mo</span></p>
+              <p className="text-[10px] text-slate-400">{wpMetrics.activeStandard} Std × $9 + {wpMetrics.activeAgency} Agency × $29</p>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Renewals Due (30 days)</p>
-              <p className={`text-2xl font-bold ${wpMetrics.expiringSoon > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{wpMetrics.expiringSoon}</p>
-              <p className="text-xs text-slate-400 mt-1">{wpMetrics.expiringSoon > 0 ? 'Licenses expiring soon' : 'No upcoming renewals'}</p>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <p className="text-[10px] font-medium text-slate-500 uppercase mb-0.5">Renewals Due (30d)</p>
+              <p className={`text-xl font-bold ${wpMetrics.expiringSoon > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{wpMetrics.expiringSoon}</p>
+              <p className="text-[10px] text-slate-400">{wpMetrics.expiringSoon > 0 ? 'Expiring soon' : 'No upcoming'}</p>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Annual Revenue (ARR)</p>
-              <p className="text-2xl font-bold text-slate-900">${(wpMetrics.mrr * 12).toLocaleString()}<span className="text-sm font-normal text-slate-400">/yr</span></p>
-              <p className="text-xs text-slate-400 mt-1">Based on current active subscriptions</p>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <p className="text-[10px] font-medium text-slate-500 uppercase mb-0.5">Annual Revenue (ARR)</p>
+              <p className="text-xl font-bold text-slate-900">${(wpMetrics.mrr * 12).toLocaleString()}<span className="text-xs font-normal text-slate-400">/yr</span></p>
+              <p className="text-[10px] text-slate-400">Current active subs</p>
             </div>
           </div>
 
-          {/* Subscription Growth Chart */}
-          <SubscriptionGrowthChart wpTenants={wpTenants} />
-
-          {/* Active vs Suspended breakdown */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Tenant Status Breakdown</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <div>
-                  <p className="text-2xl font-bold text-green-700">{wpMetrics.activeCount}</p>
-                  <p className="text-xs text-green-600">Active</p>
+          {/* Chart + Status side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <SubscriptionGrowthChart wpTenants={wpTenants} />
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <h2 className="text-sm font-semibold text-slate-900 mb-3">Tenant Status</h2>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-lg font-bold text-green-700">{wpMetrics.activeCount}</p>
+                    <p className="text-[10px] text-green-600">Active</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
-                <XCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                <div>
-                  <p className="text-2xl font-bold text-amber-700">
-                    {wpTenants.filter((t) => t.status === 'suspended').length}
-                  </p>
-                  <p className="text-xs text-amber-600">Suspended</p>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <XCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-lg font-bold text-amber-700">
+                      {wpTenants.filter((t) => t.status === 'suspended').length}
+                    </p>
+                    <p className="text-[10px] text-amber-600">Suspended</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
-                <XCircle className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                <div>
-                  <p className="text-2xl font-bold text-slate-600">
-                    {wpTenants.filter((t) => t.status === 'cancelled').length}
-                  </p>
-                  <p className="text-xs text-slate-500">Cancelled</p>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+                  <XCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-lg font-bold text-slate-600">
+                      {wpTenants.filter((t) => t.status === 'cancelled').length}
+                    </p>
+                    <p className="text-[10px] text-slate-500">Cancelled</p>
+                  </div>
                 </div>
               </div>
             </div>
