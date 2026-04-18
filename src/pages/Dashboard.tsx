@@ -114,13 +114,29 @@ export default function Dashboard() {
       (sum, t) => sum + (t.licensedSites?.length ?? 0),
       0,
     );
+    const domainsPerPortal = adminPortals > 0 ? (authorizedDomains / adminPortals).toFixed(1) : '0';
     const wpStandard = wpTenants.filter((t) => t.plan === 'WP - Standard').length;
     const wpAgency = wpTenants.filter((t) => t.plan === 'WP - Agency').length;
     const activeCount = wpTenants.filter((t) => t.status === 'active').length;
     const suspendedCount = wpTenants.filter(
       (t) => t.status === 'suspended' || t.status === 'cancelled',
     ).length;
-    return { adminPortals, authorizedDomains, wpStandard, wpAgency, activeCount, suspendedCount };
+
+    // Revenue estimates (Standard=$9/mo, Agency=$29/mo)
+    const activeStandard = wpTenants.filter((t) => t.status === 'active' && t.plan === 'WP - Standard').length;
+    const activeAgency = wpTenants.filter((t) => t.status === 'active' && t.plan === 'WP - Agency').length;
+    const mrr = activeStandard * 9 + activeAgency * 29;
+
+    // Licenses expiring within 30 days
+    const now = new Date();
+    const thirtyDays = new Date(now.getTime() + 30 * 86400000);
+    const expiringSoon = wpTenants.filter((t) => {
+      if (!t.licenseExpiry || t.status !== 'active') return false;
+      const exp = new Date(t.licenseExpiry);
+      return exp <= thirtyDays && exp >= now;
+    }).length;
+
+    return { adminPortals, authorizedDomains, domainsPerPortal, wpStandard, wpAgency, activeCount, suspendedCount, mrr, expiringSoon, activeStandard, activeAgency };
   }, [wpTenants]);
 
   // Recent admin logins (last 5), matched to WP tenants
@@ -161,7 +177,7 @@ export default function Dashboard() {
               value={wpMetrics.authorizedDomains}
               icon={Globe}
               accent="green"
-              subtitle="Licensed sites total"
+              subtitle={`${wpMetrics.domainsPerPortal} avg per portal`}
             />
             <StatCard
               label="Active Tenants"
@@ -176,6 +192,25 @@ export default function Dashboard() {
               icon={Building2}
               accent="amber"
             />
+          </div>
+
+          {/* Revenue & Renewals */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Monthly Revenue (MRR)</p>
+              <p className="text-2xl font-bold text-slate-900">${wpMetrics.mrr.toLocaleString()}<span className="text-sm font-normal text-slate-400">/mo</span></p>
+              <p className="text-xs text-slate-400 mt-1">{wpMetrics.activeStandard} Standard × $9 + {wpMetrics.activeAgency} Agency × $29</p>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Renewals Due (30 days)</p>
+              <p className={`text-2xl font-bold ${wpMetrics.expiringSoon > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{wpMetrics.expiringSoon}</p>
+              <p className="text-xs text-slate-400 mt-1">{wpMetrics.expiringSoon > 0 ? 'Licenses expiring soon' : 'No upcoming renewals'}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase mb-1">Annual Revenue (ARR)</p>
+              <p className="text-2xl font-bold text-slate-900">${(wpMetrics.mrr * 12).toLocaleString()}<span className="text-sm font-normal text-slate-400">/yr</span></p>
+              <p className="text-xs text-slate-400 mt-1">Based on current active subscriptions</p>
+            </div>
           </div>
 
           {/* Active vs Suspended breakdown */}
