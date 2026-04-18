@@ -27,6 +27,231 @@ import { useGlobalFilter } from '../lib/FilterContext';
 
 type DashboardView = 'wp' | 'api';
 
+type SubGrowthFilter = 'T' | 'LW' | 'LM' | 'L3M' | 'YTD';
+
+function SubscriptionGrowthChart({ wpTenants }: { wpTenants: Tenant[] }) {
+  const [timeFilter, setTimeFilter] = useState<SubGrowthFilter>('LM');
+
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Determine date range and grouping
+    let startDate: Date;
+    let groupByWeek = false;
+
+    switch (timeFilter) {
+      case 'T':
+        startDate = today;
+        break;
+      case 'LW':
+        startDate = new Date(today.getTime() - 6 * 86400000);
+        break;
+      case 'LM':
+        startDate = new Date(today.getTime() - 29 * 86400000);
+        break;
+      case 'L3M':
+        startDate = new Date(today.getTime() - 89 * 86400000);
+        groupByWeek = true;
+        break;
+      case 'YTD':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        groupByWeek = true;
+        break;
+    }
+
+    // Sort tenants by createdAt
+    const sorted = [...wpTenants]
+      .filter((t) => t.createdAt)
+      .sort((a, b) => (a.createdAt! > b.createdAt! ? 1 : -1));
+
+    // Count cumulative subscriptions up to start date
+    let cumulativeBefore = 0;
+    for (const t of sorted) {
+      const d = new Date(t.createdAt!);
+      if (d < startDate) cumulativeBefore++;
+    }
+
+    // Build daily counts from startDate to today
+    const dailyMap = new Map<string, number>();
+    const endDate = new Date(today.getTime() + 86400000); // include today
+
+    for (let d = new Date(startDate); d < endDate; d = new Date(d.getTime() + 86400000)) {
+      const key = d.toISOString().slice(0, 10);
+      dailyMap.set(key, 0);
+    }
+
+    for (const t of sorted) {
+      const key = t.createdAt!.slice(0, 10);
+      if (dailyMap.has(key)) {
+        dailyMap.set(key, (dailyMap.get(key) ?? 0) + 1);
+      }
+    }
+
+    // Build cumulative series
+    const dailyEntries = Array.from(dailyMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    let cumulative = cumulativeBefore;
+    const dailySeries = dailyEntries.map(([date, count]) => {
+      cumulative += count;
+      return { date, value: cumulative };
+    });
+
+    if (!groupByWeek) return dailySeries;
+
+    // Group by week: take the last day of each 7-day bucket
+    const weekly: { date: string; value: number }[] = [];
+    for (let i = 0; i < dailySeries.length; i += 7) {
+      const end = Math.min(i + 6, dailySeries.length - 1);
+      weekly.push(dailySeries[end]);
+    }
+    // Ensure the last data point is always included
+    if (weekly.length > 0 && weekly[weekly.length - 1].date !== dailySeries[dailySeries.length - 1].date) {
+      weekly.push(dailySeries[dailySeries.length - 1]);
+    }
+    return weekly;
+  }, [wpTenants, timeFilter]);
+
+  const filters: { key: SubGrowthFilter; label: string }[] = [
+    { key: 'T', label: 'T' },
+    { key: 'LW', label: 'LW' },
+    { key: 'LM', label: 'LM' },
+    { key: 'L3M', label: 'L3M' },
+    { key: 'YTD', label: 'YTD' },
+  ];
+
+  // Chart dimensions
+  const paddingLeft = 48;
+  const paddingRight = 16;
+  const paddingTop = 16;
+  const paddingBottom = 40;
+  const viewBoxW = 800;
+  const viewBoxH = 300;
+  const chartW = viewBoxW - paddingLeft - paddingRight;
+  const chartH = viewBoxH - paddingTop - paddingBottom;
+
+  const yMin = chartData.length > 0 ? Math.min(...chartData.map((d) => d.value)) : 0;
+  const yMax = chartData.length > 0 ? Math.max(...chartData.map((d) => d.value)) : 1;
+  const yRange = yMax - yMin || 1;
+  // Add 10% padding to Y range
+  const yFloor = Math.max(0, yMin - Math.ceil(yRange * 0.1));
+  const yCeil = yMax + Math.ceil(yRange * 0.1);
+  const ySpan = yCeil - yFloor || 1;
+
+  const points = chartData.map((d, i) => {
+    const x = paddingLeft + (chartData.length > 1 ? (i / (chartData.length - 1)) * chartW : chartW / 2);
+    const y = paddingTop + chartH - ((d.value - yFloor) / ySpan) * chartH;
+    return { x, y, date: d.date, value: d.value };
+  });
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaPath = points.length > 0
+    ? `${linePath} L${points[points.length - 1].x},${paddingTop + chartH} L${points[0].x},${paddingTop + chartH} Z`
+    : '';
+
+  // Y axis ticks (5 ticks)
+  const yTicks: number[] = [];
+  const tickCount = 5;
+  for (let i = 0; i <= tickCount; i++) {
+    yTicks.push(Math.round(yFloor + (ySpan * i) / tickCount));
+  }
+
+  // X axis labels — pick up to 6 evenly spaced
+  const xLabelCount = Math.min(6, points.length);
+  const xLabelIndices: number[] = [];
+  if (points.length <= xLabelCount) {
+    points.forEach((_, i) => xLabelIndices.push(i));
+  } else {
+    for (let i = 0; i < xLabelCount; i++) {
+      xLabelIndices.push(Math.round((i / (xLabelCount - 1)) * (points.length - 1)));
+    }
+  }
+
+  const formatDateLabel = (iso: string) => {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-900">Subscription Growth</h2>
+        <div className="flex gap-1">
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setTimeFilter(f.key)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                timeFilter === f.key
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {chartData.length === 0 ? (
+        <div className="flex items-center justify-center h-48 text-sm text-slate-400">
+          No subscription data for this period.
+        </div>
+      ) : (
+        <svg
+          viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
+          className="w-full h-auto"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <linearGradient id="subGrowthFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+
+          {/* Y axis grid lines and labels */}
+          {yTicks.map((tick) => {
+            const y = paddingTop + chartH - ((tick - yFloor) / ySpan) * chartH;
+            return (
+              <g key={tick}>
+                <line x1={paddingLeft} y1={y} x2={viewBoxW - paddingRight} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                <text x={paddingLeft - 8} y={y + 4} textAnchor="end" fill="#94a3b8" fontSize="11">
+                  {tick}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Area fill */}
+          {points.length > 1 && (
+            <path d={areaPath} fill="url(#subGrowthFill)" />
+          )}
+
+          {/* Line */}
+          {points.length > 1 && (
+            <path d={linePath} fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+          )}
+
+          {/* Data points */}
+          {points.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#4f46e5" stroke="#fff" strokeWidth="2" />
+          ))}
+
+          {/* X axis labels */}
+          {xLabelIndices.map((idx) => {
+            const p = points[idx];
+            return (
+              <text key={idx} x={p.x} y={viewBoxH - 8} textAnchor="middle" fill="#94a3b8" fontSize="11">
+                {formatDateLabel(p.date)}
+              </text>
+            );
+          })}
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { filter } = useGlobalFilter();
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
@@ -212,6 +437,9 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 mt-1">Based on current active subscriptions</p>
             </div>
           </div>
+
+          {/* Subscription Growth Chart */}
+          <SubscriptionGrowthChart wpTenants={wpTenants} />
 
           {/* Active vs Suspended breakdown */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
