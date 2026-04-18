@@ -177,6 +177,33 @@ service cloud.firestore {
       allow read: if isAuthenticated();
     }
 
+    // Chat conversations — both participants can read/write messages
+    // Used by: app-flashid (People > Message button)
+    match /conversations/{convId} {
+      allow read, write: if isAuthenticated();
+      match /messages/{msgId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // Interaction events — user can read/write their own activity log
+    // Used by: app-flashid (Interactions screen with real-time listener)
+    match /interactions/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Consent log — login consent events from WP and portal
+    // Used by: adminweb-flashid (Consent Log page), app-flashid (logConsent on approval)
+    match /consent_log/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // SIWE nonces — temporary nonces for wallet authentication
+    // Used by: agentapi-flashid (create/verify), web-flashid (wallet-auth page)
+    match /siwe_nonces/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // Catch-all: deny everything not explicitly allowed above
     // Applies to: all apps — any collection not listed above is blocked
     match /{document=**} {
