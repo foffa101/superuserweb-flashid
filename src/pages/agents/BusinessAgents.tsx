@@ -115,7 +115,7 @@ export default function BusinessAgents() {
           className="flex items-center gap-2 px-4 py-2 bg-[#00F5D4] text-slate-900 rounded-lg font-medium text-sm hover:bg-[#00F5D4]/80 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Create Tenant
+          Register Agent
         </button>
       </div>
 
@@ -179,12 +179,12 @@ export default function BusinessAgents() {
         )}
       </div>
 
-      {/* Create Tenant Modal */}
+      {/* Register Agent Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Create Tenant</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Register Agent</h2>
               <button onClick={() => setShowCreateModal(false)} className="p-1 rounded hover:bg-slate-100">
                 <X className="h-5 w-5 text-slate-400" />
               </button>
@@ -292,7 +292,7 @@ export default function BusinessAgents() {
                 disabled={creating || !newTenantName.trim() || !newAdminEmail.trim() || !newDomain.trim()}
                 className="w-full py-2 bg-[#00F5D4] text-slate-900 rounded-lg font-medium text-sm hover:bg-[#00F5D4]/80 transition-colors disabled:opacity-50"
               >
-                {creating ? 'Creating...' : 'Create Tenant'}
+                {creating ? 'Registering...' : 'Register Agent'}
               </button>
             </div>
           </div>

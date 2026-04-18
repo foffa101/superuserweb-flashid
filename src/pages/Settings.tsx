@@ -400,10 +400,13 @@ export default function Settings({ user }: SettingsProps) {
         <p className="text-xs text-slate-400 mt-3">Select which biometric methods are required. "None" skips biometric verification entirely and "Random" selects one at random.</p>
       </section>
 
-      {/* QR Code Settings */}
+      {/* Challenge Verification */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">QR Code Settings</h2>
-        <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Challenge Verification</h2>
+
+        {/* QR Code Settings (moved here) */}
+        <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">QR Code Settings</p>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               <span className="flex items-center gap-2"><QrCode className="h-4 w-4 text-slate-400" /> QR Code Timeout</span>
@@ -418,14 +421,9 @@ export default function Settings({ user }: SettingsProps) {
               <span className="flex items-center gap-2"><Timer className="h-4 w-4 text-slate-400" /> Poll Interval (milliseconds)</span>
             </label>
             <input type="number" min="1000" max="5000" step="100" value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
-            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for the verification approval status from Flash ID app (1000-5000ms)</p>
+            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for approval status (1000-5000ms)</p>
           </div>
         </div>
-      </section>
-
-      {/* Challenge Verification */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Challenge Verification</h2>
         <div className="divide-y divide-slate-100">
           {/* None */}
           <div className="flex items-center justify-between py-3">
