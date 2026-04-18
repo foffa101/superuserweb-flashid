@@ -30,30 +30,40 @@ import {
 } from '../lib/api';
 import { useGlobalFilter } from '../lib/FilterContext';
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+function toDate(val: any): Date | null {
+  if (!val) return null;
+  // Firestore Timestamp object (has toDate method)
+  if (typeof val?.toDate === 'function') return val.toDate();
+  // Firestore Timestamp-like object { seconds, nanoseconds }
+  if (typeof val?.seconds === 'number') return new Date(val.seconds * 1000);
+  // ISO string or other parseable string
+  if (typeof val === 'string') {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Number (epoch ms)
+  if (typeof val === 'number') return new Date(val);
+  return null;
 }
 
-function formatLastLogin(iso?: string, tz?: string): string {
-  if (!iso) return 'Never';
+function formatDate(val: any): string {
+  const d = toDate(val);
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatLastLogin(val?: any, tz?: string): string {
+  const d = toDate(val);
+  if (!d) return 'Never';
   try {
-    const d = new Date(iso);
-    const opts: Intl.DateTimeFormatOptions = {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: true,
-      timeZoneName: 'short',
-    };
-    if (tz) opts.timeZone = tz;
-    // Format: "14-Apr-2026 @ 2:30 PM (EST)"
     const parts = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', ...(tz ? { timeZone: tz } : {}) });
     const timeParts = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, ...(tz ? { timeZone: tz } : {}) });
     const tzAbbr = d.toLocaleTimeString('en-US', { timeZoneName: 'short', ...(tz ? { timeZone: tz } : {}) }).split(' ').pop() || '';
-    // parts = "Apr 14, 2026" -> rearrange to "14-Apr-2026"
     const m = parts.match(/([A-Za-z]+)\s+(\d+),?\s+(\d+)/);
     const dateStr = m ? `${m[2]}-${m[1]}-${m[3]}` : parts;
     return `${dateStr} @ ${timeParts} (${tzAbbr})`;
   } catch {
-    return iso;
+    return String(val);
   }
 }
 
