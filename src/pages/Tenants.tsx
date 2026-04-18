@@ -181,6 +181,9 @@ export default function Tenants() {
     try {
       // Delete tenant document
       await deleteDoc(doc(db, 'tenants', t.id));
+      // Remove from local state immediately
+      setTenants((prev) => prev.filter((x) => x.id !== t.id));
+      setDeletingTenant(null);
       // Clean up related tenant_admins documents
       const q = query(collection(db, 'tenant_admins'), where('tenantId', '==', t.id));
       const snap = await getDocs(q);
@@ -193,13 +196,10 @@ export default function Tenants() {
           await setDoc(doc(db, 'admin_config', 'whitelist'), { emails: updated });
         }
       }
-      // Remove from local state
-      setTenants((prev) => prev.filter((x) => x.id !== t.id));
     } catch (e) {
       console.error('Failed to delete tenant:', e);
     } finally {
       setDeleteLoading(false);
-      setDeletingTenant(null);
     }
   };
 
