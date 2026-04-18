@@ -135,8 +135,8 @@ export function FieldAgentIcon({ action, actionLabel, page }: FieldAgentIconProp
 
       {showPopup && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowPopup(false)} />
-          <div className="absolute right-0 top-8 z-50 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setShowPopup(false)} />
+          <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-[#00F5D4]" />

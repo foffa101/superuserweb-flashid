@@ -778,6 +778,7 @@ export default function Tenants() {
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Created</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Last Login</th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
+                <th className="px-2 py-2.5 text-xs font-medium text-slate-500 uppercase"></th>
               </tr>
             </thead>
             <tbody>
@@ -795,10 +796,7 @@ export default function Tenants() {
                         </button>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-slate-900 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {t.name}
-                          <FieldAgentIcon action="toggle_tenant_status" actionLabel="Change Tenant Status" page="tenants" />
-                        </div>
+                        {t.name}
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{t.email}</td>
                       <td className="px-4 py-3"><TypeBadge type={t.type} /></td>
@@ -837,10 +835,13 @@ export default function Tenants() {
                           </button>
                         </div>
                       </td>
+                      <td className="px-2 py-3">
+                        <FieldAgentIcon action="toggle_tenant_status" actionLabel="Change Tenant Status" page="tenants" />
+                      </td>
                     </tr>
                     {isExpanded && (
                       <tr className="bg-slate-50 border-b border-slate-100">
-                        <td colSpan={9} className="px-6 py-4">
+                        <td colSpan={10} className="px-6 py-4">
                           {/* Metrics */}
                           <div className="flex justify-center gap-12 mb-3 text-center">
                             <div>
