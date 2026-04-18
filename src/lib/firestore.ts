@@ -431,6 +431,45 @@ export async function createApprovalRequest(data: {
   return approvalId;
 }
 
+// ─── WP Events ───
+
+export type WpEventType =
+  | 'license_activated'
+  | 'license_deactivated'
+  | 'license_renewed'
+  | 'domain_added'
+  | 'domain_removed'
+  | 'tenant_created'
+  | 'admin_login'
+  | 'enrollment_approved'
+  | 'enrollment_rejected';
+
+export interface WpEvent {
+  id: string;
+  timestamp: string;
+  eventType: WpEventType;
+  tenantName: string;
+  domain: string;
+  adminEmail: string;
+  status: 'success' | 'failed';
+  details: string;
+}
+
+export async function getWpEvents(): Promise<WpEvent[]> {
+  try {
+    const q = query(
+      collection(db, 'wp_events'),
+      orderBy('timestamp', 'desc'),
+      limit(50),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as WpEvent));
+  } catch (e) {
+    console.error('Failed to get WP events:', e);
+    return [];
+  }
+}
+
 // ─── Seed Initial Data ───
 
 export async function seedInitialData(): Promise<void> {

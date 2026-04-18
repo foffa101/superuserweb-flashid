@@ -25,14 +25,14 @@ import { useGlobalFilter, type GlobalFilter } from '../lib/FilterContext';
 const allNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'Tenants', icon: Building2 },
+  { to: '/security', label: 'Security', icon: ShieldAlert },
+  { to: '/events', label: 'Events', icon: ScrollText },
+  { to: '/consent-log', label: 'Consent Log', icon: FileCheck2 },
   { to: '/agents', label: 'Agents', icon: Bot, children: [
     { to: '/agents/field', label: 'Field Agents', icon: Shield },
     { to: '/agents/business', label: 'Business Agents', icon: Building2 },
     { to: '/agents/verification', label: 'Verification Queue', icon: ClipboardCheck },
   ]},
-  { to: '/security', label: 'Security', icon: ShieldAlert },
-  { to: '/events', label: 'Events', icon: ScrollText },
-  { to: '/consent-log', label: 'Consent Log', icon: FileCheck2 },
   { to: '/billing', label: 'Billing', icon: DollarSign },
   { to: '/documentation', label: 'Documentation', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
