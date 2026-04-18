@@ -13,7 +13,7 @@ const FilterContext = createContext<FilterContextValue>({
 });
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  const [filter, setFilter] = useState<GlobalFilter>('all');
+  const [filter, setFilter] = useState<GlobalFilter>('wp');
   return (
     <FilterContext.Provider value={{ filter, setFilter }}>
       {children}
