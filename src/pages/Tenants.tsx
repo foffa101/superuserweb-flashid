@@ -311,6 +311,11 @@ export default function Tenants() {
       if (isEditing && formData.id) {
         await firestoreUpdateTenant(formData.id, formData);
         setTenants((prev) => prev.map((t) => (t.id === formData.id ? { ...t, ...formData } as Tenant : t)));
+        // Sync admin portal access on edit
+        const enablePortal = (formData as any)._enablePortal;
+        if (enablePortal !== undefined && formData.email) {
+          await toggleAdminAccess(formData.email, enablePortal, formData.id);
+        }
         setSaveResult({ ok: true, msg: 'Tenant updated successfully.' });
       } else {
         // Check for duplicate email
@@ -328,6 +333,11 @@ export default function Tenants() {
         } as Tenant;
         await createTenant(newTenant);
         setTenants((prev) => [...prev, newTenant]);
+        // Create admin portal access if checkbox was checked
+        const enablePortal = (formData as any)._enablePortal;
+        if (enablePortal && newTenant.email) {
+          await toggleAdminAccess(newTenant.email, true, newTenant.id);
+        }
         setSaveResult({ ok: true, msg: 'Tenant created successfully.' });
       }
       setTimeout(() => { setView('list'); setFormData({}); setSaveResult(null); }, 1200);
@@ -698,10 +708,10 @@ export default function Tenants() {
                 >
                   <input
                     type="checkbox"
-                    checked={isChecked && !isWpStandard}
+                    checked={((formData as any)._enablePortal ?? isChecked) && !isWpStandard}
                     disabled={isWpStandard}
                     onChange={(e) => {
-                      if (!isWpStandard) toggleAdminAccess(formData.email || '', e.target.checked, formData.id);
+                      if (!isWpStandard) setFormData((p) => ({ ...p, _enablePortal: e.target.checked } as any));
                     }}
                     className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 accent-red-600"
                   />
