@@ -144,13 +144,31 @@ export default function Tenants() {
     }).catch(() => {});
   }, []);
 
-  const toggleAdminAccess = async (email: string, grant: boolean) => {
+  const toggleAdminAccess = async (email: string, grant: boolean, tenantId?: string) => {
+    const emailLower = email.toLowerCase();
     const updated = grant
-      ? [...adminWhitelist.filter(e => e !== email.toLowerCase()), email.toLowerCase()]
-      : adminWhitelist.filter(e => e !== email.toLowerCase());
+      ? [...adminWhitelist.filter(e => e !== emailLower), emailLower]
+      : adminWhitelist.filter(e => e !== emailLower);
     setAdminWhitelist(updated);
     try {
       await setDoc(doc(db, 'admin_config', 'whitelist'), { emails: updated });
+      // Create or remove tenant_admins document so admin portal can resolve the tenant
+      const adminDocId = `${tenantId || 'unknown'}_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+      if (grant && tenantId) {
+        await setDoc(doc(db, 'tenant_admins', adminDocId), {
+          email: emailLower,
+          tenantId,
+        }, { merge: true });
+      } else if (!grant) {
+        // Remove tenant_admins doc on revoke
+        try {
+          const q = query(collection(db, 'tenant_admins'), where('email', '==', emailLower));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            await deleteDoc(d.ref);
+          }
+        } catch { /* ignore cleanup errors */ }
+      }
     } catch (e) {
       console.error('Failed to update admin whitelist:', e);
     }
@@ -246,7 +264,7 @@ export default function Tenants() {
       }));
       // Revoke admin portal access
       if (formData.email) {
-        toggleAdminAccess(formData.email, false);
+        toggleAdminAccess(formData.email, false, formData.id);
         // Remove tenant_admins record
         const q = query(collection(db, 'tenant_admins'), where('email', '==', formData.email.toLowerCase()));
         getDocs(q).then((snap) => {
@@ -683,7 +701,7 @@ export default function Tenants() {
                     checked={isChecked && !isWpStandard}
                     disabled={isWpStandard}
                     onChange={(e) => {
-                      if (!isWpStandard) toggleAdminAccess(formData.email || '', e.target.checked);
+                      if (!isWpStandard) toggleAdminAccess(formData.email || '', e.target.checked, formData.id);
                     }}
                     className="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500 accent-red-600"
                   />
