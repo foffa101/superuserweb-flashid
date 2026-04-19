@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, CheckCircle, Clock, X, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, CheckCircle, Clock, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { getFirestore, collection, getDocs, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { app } from '../../lib/firebase';
 
@@ -121,9 +121,14 @@ export default function BusinessAgents() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         {loading ? (
-          <div className="p-8 text-center text-sm text-slate-400">Loading tenants...</div>
+          <div className="p-8 text-center">
+            <div className="flex items-center justify-center gap-2 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Loading AI Agents...</span>
+            </div>
+          </div>
         ) : tenants.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-400">No business tenants yet.</div>
+          <div className="p-8 text-center text-sm text-slate-400">No AI agents yet.</div>
         ) : (
           <div className="divide-y divide-slate-100">
             {tenants.map((tenant) => (

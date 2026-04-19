@@ -93,6 +93,13 @@ export default function Billing() {
     const apiCalls = activeTenants
       .filter((t) => t.type === 'api')
       .reduce((sum, t) => sum + (t.callsThisMonth || 0), 0);
+    // WP license revenue: count active WP tenants by plan and multiply by price
+    const wpLicenseRevenue = activeTenants
+      .filter((t) => t.type === 'wp' && t.status === 'active')
+      .reduce((sum, t) => {
+        if (t.plan === 'WP - Agency') return sum + 99;
+        return sum + 29; // WP - Standard and others default to $29/mo
+      }, 0);
     const tenantIds = new Set(base.map((t) => t.id));
     const currentMonthInvoices = invoices.filter((inv) => inv.date.startsWith('2026-04') && tenantIds.has(inv.tenantId));
     const revenue = currentMonthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
@@ -100,6 +107,7 @@ export default function Billing() {
       totalActiveTenants: activeTenants.length,
       totalWPLicenses: wpLicenses,
       totalAPICallsThisMonth: apiCalls,
+      wpLicenseRevenue,
       estimatedRevenueThisMonth: revenue,
     };
   })();
@@ -269,7 +277,11 @@ export default function Billing() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Active Tenants" value={summary.totalActiveTenants} icon={Building2} accent="blue" />
         <StatCard label="WP Licenses Active" value={summary.totalWPLicenses} icon={FileText} accent="amber" />
-        <StatCard label="API Calls This Month" value={summary.totalAPICallsThisMonth.toLocaleString()} icon={Phone} accent="green" />
+        {globalFilter === 'wp' ? (
+          <StatCard label="WP License Revenue" value={`$${summary.wpLicenseRevenue.toLocaleString()}/mo`} icon={DollarSign} accent="green" />
+        ) : (
+          <StatCard label="API Calls This Month" value={summary.totalAPICallsThisMonth.toLocaleString()} icon={Phone} accent="green" />
+        )}
         <StatCard label="Est. Revenue This Month" value={`$${summary.estimatedRevenueThisMonth.toLocaleString()}`} icon={DollarSign} accent="red" />
       </div>
 

@@ -19,11 +19,11 @@ const REDIRECT_OPTIONS = [
   { label: 'Tenants', value: '/tenants' },
   { label: 'Billing', value: '/billing' },
   { label: 'Field Agents', value: '/agents/field' },
-  { label: 'Business Agents', value: '/agents/business' },
+  { label: 'AI Agents', value: '/agents/business' },
   { label: 'Verification Queue', value: '/agents/verification' },
   { label: 'Security', value: '/security' },
   { label: 'Events', value: '/events' },
-  { label: 'Consent Log', value: '/consent-log' },
+  { label: 'Consent', value: '/consent-log' },
   { label: 'Documentation', value: '/documentation' },
   { label: 'Settings', value: '/settings' },
 ];
@@ -403,27 +403,6 @@ export default function Settings({ user }: SettingsProps) {
       {/* Challenge Verification */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Challenge Verification</h2>
-
-        {/* QR Code Settings (moved here) */}
-        <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">QR Code Settings</p>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <span className="flex items-center gap-2"><QrCode className="h-4 w-4 text-slate-400" /> QR Code Timeout</span>
-            </label>
-            <select value={qrTimeout} onChange={(e) => setQrTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
-              {QR_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-            <p className="text-xs text-slate-400 mt-1">How long the QR code stays valid before expiring</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <span className="flex items-center gap-2"><Timer className="h-4 w-4 text-slate-400" /> Poll Interval (milliseconds)</span>
-            </label>
-            <input type="number" min="1000" max="5000" step="100" value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
-            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for approval status (1000-5000ms)</p>
-          </div>
-        </div>
         <div className="divide-y divide-slate-100">
           {/* None */}
           <div className="flex items-center justify-between py-3">
@@ -490,6 +469,29 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">Select which verification methods are required. "None" skips challenge verification entirely and "Random" selects one at random.</p>
+      </section>
+
+      {/* QR Code Settings */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">QR Code Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              <span className="flex items-center gap-2"><QrCode className="h-4 w-4 text-slate-400" /> QR Code Timeout</span>
+            </label>
+            <select value={qrTimeout} onChange={(e) => setQrTimeout(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+              {QR_TIMEOUT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+            <p className="text-xs text-slate-400 mt-1">How long the QR code stays valid before expiring</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              <span className="flex items-center gap-2"><Timer className="h-4 w-4 text-slate-400" /> Poll Interval (milliseconds)</span>
+            </label>
+            <input type="number" min="1000" max="5000" step="100" value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} className="w-full max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" />
+            <p className="text-xs text-slate-400 mt-1">How frequently the browser checks for approval status (1000-5000ms)</p>
+          </div>
+        </div>
       </section>
 
       {/* Session Timeout */}

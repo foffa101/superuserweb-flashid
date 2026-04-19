@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, Loader2 } from 'lucide-react';
 import EventRow from '../components/EventRow';
 import { type EventType, type EventStatus, type PlatformEvent, type Tenant } from '../lib/api';
 import { getEvents, getTenants, deleteAllEvents, seedInitialData, getWpEvents, type WpEvent, type WpEventType } from '../lib/firestore';
@@ -248,7 +248,7 @@ export default function Events() {
   const [events, setEvents] = useState<PlatformEvent[]>([]);
   const [wpEvents, setWpEvents] = useState<WpEvent[]>([]);
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [tenantFilter, setTenantFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -350,6 +350,17 @@ export default function Events() {
   // Which sections to show
   const showWp = globalFilter === 'all' || globalFilter === 'wp';
   const showApi = globalFilter === 'all' || globalFilter === 'api';
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="flex items-center justify-center gap-2 text-slate-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading Events...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

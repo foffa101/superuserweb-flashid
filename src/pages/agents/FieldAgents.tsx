@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Shield, Trash2 } from 'lucide-react';
+import { Shield, Trash2, Loader2 } from 'lucide-react';
 import { getFieldAgents, deleteFieldAgent, type FieldAgent } from '../../lib/firestore';
 
 export default function FieldAgents() {
   const [fieldAgents, setFieldAgents] = useState<FieldAgent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { getFieldAgents().then(setFieldAgents); }, []);
+  useEffect(() => { getFieldAgents().then((agents) => { setFieldAgents(agents); setLoading(false); }); }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="flex items-center justify-center gap-2 text-slate-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading Field Agents...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
