@@ -126,6 +126,8 @@ export default function Tenants() {
     async function load() {
       await seedInitialData();
       const [data, logins] = await Promise.all([fetchTenants(), getTenantAdminLogins()]);
+      console.log('[Tenants] adminLogins:', logins);
+      console.log('[Tenants] tenants:', data.map(t => ({ id: t.id, email: t.email })));
       setTenants(data);
       setAdminLogins(logins);
       setLoading(false);

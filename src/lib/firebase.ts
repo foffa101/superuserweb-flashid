@@ -25,6 +25,7 @@ export async function signInWithGoogle(): Promise<User> {
 }
 
 export async function signOut(): Promise<void> {
+  localStorage.removeItem('superadmin-redirect-after-login');
   await firebaseSignOut(auth);
 }
 

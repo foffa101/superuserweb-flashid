@@ -209,7 +209,7 @@ export default function App() {
   return (
     <FilterProvider>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to={localStorage.getItem('superadmin-redirect-after-login') || '/dashboard'} replace /> : <Login />} />
+        <Route path="/login" element={user ? <Navigate to={'/dashboard'} replace /> : <Login />} />
         <Route
           element={
             <ProtectedRoute user={user}>
@@ -230,7 +230,7 @@ export default function App() {
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/settings" element={<Settings user={user!} />} />
         </Route>
-        <Route path="*" element={<Navigate to={user ? (localStorage.getItem('superadmin-redirect-after-login') || '/dashboard') : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={user ? ('/dashboard') : '/login'} replace />} />
       </Routes>
     </FilterProvider>
   );
