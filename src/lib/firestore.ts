@@ -5,6 +5,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  addDoc,
   updateDoc,
   deleteDoc,
 
@@ -466,6 +467,43 @@ export async function getWpEvents(): Promise<WpEvent[]> {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() } as WpEvent));
   } catch (e) {
     console.error('Failed to get WP events:', e);
+    return [];
+  }
+}
+
+// ─── Admin Activity Logging ───
+
+export interface AdminActivity {
+  email: string;
+  name: string;
+  portal: 'super' | 'admin';
+  loginMethod: string;
+  ip: string;
+  timestamp: string;
+}
+
+export async function logAdminActivity(activity: Omit<AdminActivity, 'timestamp'>): Promise<void> {
+  try {
+    await addDoc(collection(db, 'admin_activity'), {
+      ...activity,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error('Failed to log admin activity:', e);
+  }
+}
+
+export async function getAdminActivity(limitCount = 20): Promise<AdminActivity[]> {
+  try {
+    const q = query(
+      collection(db, 'admin_activity'),
+      orderBy('timestamp', 'desc'),
+      limit(limitCount),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => d.data() as AdminActivity);
+  } catch (e) {
+    console.error('Failed to get admin activity:', e);
     return [];
   }
 }

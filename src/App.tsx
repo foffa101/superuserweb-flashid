@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthChange, signOut, type User } from './lib/firebase';
 import { loadSecuritySettings } from './lib/settings';
 import { isEmailWhitelisted } from './lib/whitelist';
+import { logAdminActivity } from './lib/firestore';
 import { ShieldX } from 'lucide-react';
 import { FilterProvider } from './lib/FilterContext';
 import { QRVerification } from './components/QRVerification';
@@ -105,6 +106,23 @@ export default function App() {
     }
     const allowed = await isEmailWhitelisted(email);
     setAccessStatus(allowed ? 'granted' : 'denied');
+
+    if (allowed) {
+      // Log admin login activity
+      let ip = '';
+      try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        ip = data.ip || '';
+      } catch { /* IP fetch failed, continue with empty */ }
+      logAdminActivity({
+        email: u.email || '',
+        name: u.displayName || '',
+        portal: 'super',
+        loginMethod: 'google',
+        ip,
+      });
+    }
 
     if (!allowed) {
       setTimeout(async () => {

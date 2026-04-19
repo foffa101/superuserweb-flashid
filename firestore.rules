@@ -204,6 +204,11 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // Admin activity log — portal login tracking (super admin + admin portals)
+    match /admin_activity/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // Catch-all: deny everything not explicitly allowed above
     // Applies to: all apps — any collection not listed above is blocked
     match /{document=**} {

@@ -19,9 +19,11 @@ import {
   getEvents,
   getStats,
   getTenantAdminLogins,
+  getAdminActivity,
   seedInitialData,
   type PlatformStats,
   type TenantAdminLogin,
+  type AdminActivity,
 } from '../lib/firestore';
 import { useGlobalFilter } from '../lib/FilterContext';
 
@@ -257,6 +259,7 @@ export default function Dashboard() {
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
   const [allEvents, setAllEvents] = useState<PlatformEvent[]>([]);
   const [adminLogins, setAdminLogins] = useState<TenantAdminLogin[]>([]);
+  const [portalActivity, setPortalActivity] = useState<AdminActivity[]>([]);
   const [baseStats, setBaseStats] = useState<PlatformStats>({
     totalSites: 0,
     totalSessionsToday: 0,
@@ -279,16 +282,18 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       await seedInitialData();
-      const [tenants, events, stats, logins] = await Promise.all([
+      const [tenants, events, stats, logins, activity] = await Promise.all([
         getTenants(),
         getEvents(),
         getStats(),
         getTenantAdminLogins(),
+        getAdminActivity(10),
       ]);
       setAllTenants(tenants);
       setAllEvents(events);
       setBaseStats({ ...stats, totalSites: tenants.length });
       setAdminLogins(logins);
+      setPortalActivity(activity);
       setLoading(false);
     }
     load();
@@ -477,10 +482,69 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Recent Admin Logins */}
+          {/* Portal Admin Activity */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
             <div className="px-6 py-4 border-b border-slate-200">
               <h2 className="text-lg font-semibold text-slate-900">Recent Admin Activity</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Last 10 portal admin logins</p>
+            </div>
+            {portalActivity.length === 0 ? (
+              <div className="px-6 py-8 text-center text-sm text-slate-400">
+                No portal login activity recorded yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Email</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Portal</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Login Method</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">IP Address</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Date / Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portalActivity.map((a, idx) => (
+                      <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{a.name || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap font-mono text-xs">{a.email}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            a.portal === 'super'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-indigo-100 text-indigo-700'
+                          }`}>
+                            {a.portal === 'super' ? 'Super' : 'Admin'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap capitalize">{a.loginMethod}</td>
+                        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap font-mono">{a.ip || '—'}</td>
+                        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-slate-400" />
+                            {new Date(a.timestamp).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            })}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Tenant Admin Logins */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Tenant Admin Logins</h2>
               <p className="text-xs text-slate-500 mt-0.5">Last 5 tenant admin logins</p>
             </div>
             {recentAdminLogins.length === 0 ? (
