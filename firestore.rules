@@ -165,9 +165,15 @@ service cloud.firestore {
       );
     }
 
-    // Consent records — QR verification consent log
+    // Consent records — immutable QR verification consent log.
+    // Owner can create their own record; update is limited to setting
+    // revokedAt (revocation) — the original consent metadata is preserved.
     match /consent_records/{recordId} {
-      allow read: if isAuthenticated();
+      allow read:   if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated()
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revokedAt']);
     }
 
     // Scope categories — superuser-owned seed data
