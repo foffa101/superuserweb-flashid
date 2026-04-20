@@ -133,10 +133,10 @@ service cloud.firestore {
 
     // Tenant admins — maps admin UIDs to tenants
     // Read: tenant admin (own record) or superuser
-    // Write: backend only (Firebase Admin SDK bypasses rules)
+    // Write + delete: authenticated users (super admin cleans up stale docs when
+    // deleting tenants or revoking access). Backend Admin SDK bypasses rules.
     match /tenant_admins/{docId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
+      allow read, create, update, delete: if isAuthenticated();
     }
 
     // Business agents — registered API agents per tenant

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Building2, Plus, CheckCircle, Clock, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { getFirestore, collection, getDocs, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { app } from '../../lib/firebase';
+import { normalizeDomain } from '../../lib/domain';
 
 const db = getFirestore(app, 'ai-studio-5104b9c1-7e74-4c52-9bdf-6e57ed9d5d3c');
 
@@ -51,7 +52,7 @@ export default function BusinessAgents() {
     try {
       const tenantId = `tenant_${Date.now()}`;
       const email = newAdminEmail.trim().toLowerCase();
-      const domain = newDomain.trim().toLowerCase();
+      const domain = normalizeDomain(newDomain);
 
       // 1. Create the tenant record
       await setDoc(doc(db, 'tenants', tenantId), {

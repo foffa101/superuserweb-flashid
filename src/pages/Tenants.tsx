@@ -29,6 +29,7 @@ import {
   type BillingCycle,
 } from '../lib/api';
 import { useGlobalFilter } from '../lib/FilterContext';
+import { normalizeDomainList } from '../lib/domain';
 
 function toDate(val: any): Date | null {
   if (!val) return null;
@@ -304,6 +305,10 @@ export default function Tenants() {
     // Enforce single domain for WP Standard
     if (formData.plan === 'WP - Standard' && formData.licensedSites && formData.licensedSites.length > 1) {
       formData.licensedSites = formData.licensedSites.slice(0, 1);
+    }
+    // Normalize domains — strip scheme, www, trailing slash, lowercase
+    if (formData.licensedSites && formData.licensedSites.length > 0) {
+      formData.licensedSites = normalizeDomainList(formData.licensedSites);
     }
     setSaving(true);
     setSaveResult(null);
@@ -603,7 +608,7 @@ export default function Tenants() {
                       value={newSite}
                       onChange={(e) => setNewSite(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSite())}
-                      placeholder="https://example.com"
+                      placeholder="example.com"
                       className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                     <button onClick={addSite} className="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded-lg hover:bg-slate-200">Add</button>
