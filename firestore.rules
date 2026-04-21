@@ -215,6 +215,34 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // Interaction requests — mutual-consent contact adds between two Flash ID
+    // users. Keyed by flashidUid (16-hex) on both sides; the server-side rule
+    // resolves request.auth.uid → flashid_uid via the caller's users doc so
+    // each party can only see requests where they're the sender or recipient.
+    // Status transitions:
+    //   pending  → approved | rejected | cancelled | revoked
+    //   approved → revoked
+    // Cancel = silent delete (sender only, while pending).
+    // Revoke = status=revoked with revokedBy set (either side, after approved).
+    match /interaction_requests/{requestId} {
+      function myFlashidUid() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.flashid_uid;
+      }
+      function isParty() {
+        return isAuthenticated() && (
+          resource.data.fromFlashidUid == myFlashidUid() ||
+          resource.data.toFlashidUid == myFlashidUid()
+        );
+      }
+      allow read: if isParty();
+      allow create: if isAuthenticated()
+        && request.resource.data.fromAuthUid == request.auth.uid
+        && request.resource.data.fromFlashidUid == myFlashidUid()
+        && request.resource.data.status == "pending";
+      allow update: if isParty();
+      allow delete: if isParty();
+    }
+
     // Catch-all: deny everything not explicitly allowed above
     // Applies to: all apps — any collection not listed above is blocked
     match /{document=**} {
