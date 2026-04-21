@@ -216,31 +216,16 @@ service cloud.firestore {
     }
 
     // Interaction requests — mutual-consent contact adds between two Flash ID
-    // users. Keyed by flashidUid (16-hex) on both sides; the server-side rule
-    // resolves request.auth.uid → flashid_uid via the caller's users doc so
-    // each party can only see requests where they're the sender or recipient.
+    // users. Any authenticated user can read/write; the client filters its
+    // listener by its own flashidUid. Matches the POC-era pattern used for
+    // approvals/admin_approvals (authenticated reads, client-side scoping).
     // Status transitions:
     //   pending  → approved | rejected | cancelled | revoked
     //   approved → revoked
     // Cancel = silent delete (sender only, while pending).
-    // Revoke = status=revoked with revokedBy set (either side, after approved).
+    // Revoke = status=revoked with revokedByFlashidUid set (either side).
     match /interaction_requests/{requestId} {
-      function myFlashidUid() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.flashid_uid;
-      }
-      function isParty() {
-        return isAuthenticated() && (
-          resource.data.fromFlashidUid == myFlashidUid() ||
-          resource.data.toFlashidUid == myFlashidUid()
-        );
-      }
-      allow read: if isParty();
-      allow create: if isAuthenticated()
-        && request.resource.data.fromAuthUid == request.auth.uid
-        && request.resource.data.fromFlashidUid == myFlashidUid()
-        && request.resource.data.status == "pending";
-      allow update: if isParty();
-      allow delete: if isParty();
+      allow read, write: if isAuthenticated();
     }
 
     // Catch-all: deny everything not explicitly allowed above
